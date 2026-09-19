@@ -22,7 +22,6 @@ const onboardingEl     = $('onboarding');
 const mainUiEl         = $('mainUi');
 const powerToggleEl    = $('powerToggle');
 const powerLabelEl     = $('powerLabel');
-const settingsBtnEl    = $('settingsBtn');
 const errorBannerEl    = $('errorBanner');
 const errorMessageEl   = $('errorMessage');
 const tabFaviconWrapEl = $('tabFaviconWrap');
@@ -52,28 +51,44 @@ let currentTabId   = null;
 let currentSession = null; // SessionRecord from SW
 let prefs          = {};
 let _sliderDragging = false;
+let _listeningForRuntimeMessages = false;
 
 // ── Init ──────────────────────────────────────────────────────
 
 async function init() {
   // Show version
-  const manifest = platformApi.runtime.getManifest();
-  versionLabelEl.textContent = `v${manifest.version}`;
+  try {
+    const manifest = platformApi.runtime.getManifest();
+    versionLabelEl.textContent = `v${manifest.version}`;
+  } catch (err) {
+    console.warn('[Boostune] Could not read manifest version', err);
+  }
 
   // Load preferences
-  prefs = await getPrefs();
+  prefs = await getPrefs().catch((err) => {
+    console.warn('[Boostune] Falling back to default preferences', err);
+    return {};
+  });
   applyVolumeLimit();
+  renderState();
 
-  // Check onboarding
   if (!prefs.onboardingCompleted) {
     showOnboarding();
-    return;
+  } else {
+    mainUiEl.classList.remove('hidden');
+    onboardingEl.classList.add('hidden');
   }
 
   // Get current tab
-  const [tab] = await platformApi.tabs.query({ active: true, currentWindow: true });
+  const [tab] = await platformApi.tabs.query({ active: true, currentWindow: true }).catch((err) => {
+    console.warn('[Boostune] Could not query active tab', err);
+    return [];
+  });
   if (!tab) {
+    renderUnavailableTab();
     showError("Boostune couldn't detect the current tab.");
+    await safeRefreshPlayingTabs();
+    startRuntimeListener();
     return;
   }
 
@@ -84,6 +99,8 @@ async function init() {
   if (isUnsupportedUrl(tab.url)) {
     showError("Boostune can't control audio on this browser page.");
     disableControls();
+    await safeRefreshPlayingTabs();
+    startRuntimeListener();
     return;
   }
 
@@ -93,13 +110,15 @@ async function init() {
     if (res?.success && res.state) {
       currentSession = res.state;
     }
-  } catch {}
+  } catch (err) {
+    console.warn('[Boostune] Could not read current boost state', err);
+  }
 
   renderState();
-  await refreshPlayingTabs();
+  await safeRefreshPlayingTabs();
 
   // Listen for real-time state changes from SW
-  platformApi.runtime.onMessage.addListener(onSWMessage);
+  startRuntimeListener();
 }
 
 // ── Onboarding ────────────────────────────────────────────────
@@ -137,6 +156,14 @@ function renderTabInfo(tab) {
     tabFaviconWrapEl.className = 'tab-card__favicon tab-card__favicon--placeholder';
     tabFaviconWrapEl.appendChild(defaultFavicon());
   }
+}
+
+function renderUnavailableTab() {
+  tabTitleEl.textContent = 'Boostune is ready';
+  tabDomainEl.textContent = 'Play audio to start boosting.';
+  tabFaviconWrapEl.innerHTML = '';
+  tabFaviconWrapEl.className = 'tab-card__favicon tab-card__favicon--placeholder';
+  tabFaviconWrapEl.appendChild(defaultFavicon());
 }
 
 function defaultFavicon() {
@@ -249,7 +276,10 @@ function setVolumeUI(volume, animate = true) {
 
 async function refreshPlayingTabs() {
   // Real audible tabs from Chrome
-  const audibleTabs = await platformApi.tabs.query({ audible: true });
+  const audibleTabs = await platformApi.tabs.query({ audible: true }).catch((err) => {
+    console.warn('[Boostune] Could not query audible tabs', err);
+    return [];
+  });
 
   // Get all Boostune session states
   let allStates = {};
@@ -335,6 +365,16 @@ async function refreshPlayingTabs() {
   }
 }
 
+async function safeRefreshPlayingTabs() {
+  try {
+    await refreshPlayingTabs();
+  } catch (err) {
+    console.warn('[Boostune] Could not refresh playing tabs', err);
+    playingTabsListEl.innerHTML = '<div class="empty-state">Boostune is ready. Play audio to start boosting.</div>';
+    playingCountEl.textContent = '';
+  }
+}
+
 async function selectTab(tabId) {
   if (tabId === currentTabId) return;
 
@@ -368,16 +408,26 @@ powerToggleEl.addEventListener('click', async () => {
     // Stop
     powerToggleEl.disabled = true;
     setStatus('stopping');
-    const res = await sw(MSG.BOOST_STOP, { tabId: currentTabId });
-    powerToggleEl.disabled = false;
-    if (!res?.success) showError(res?.error || 'Failed to stop boost.');
+    try {
+      const res = await sw(MSG.BOOST_STOP, { tabId: currentTabId });
+      if (!res?.success) showError(res?.error || 'Failed to stop boost.');
+    } catch (err) {
+      showError(err.message || 'Failed to stop boost.');
+    } finally {
+      powerToggleEl.disabled = false;
+    }
   } else {
     // Start
     powerToggleEl.disabled = true;
     setStatus('starting');
-    const res = await sw(MSG.BOOST_START, { tabId: currentTabId });
-    powerToggleEl.disabled = false;
-    if (!res?.success) showError(res?.error || 'Failed to start boost.');
+    try {
+      const res = await sw(MSG.BOOST_START, { tabId: currentTabId });
+      if (!res?.success) showError(res?.error || 'Failed to start boost.');
+    } catch (err) {
+      showError(err.message || 'Failed to start boost.');
+    } finally {
+      powerToggleEl.disabled = false;
+    }
   }
 });
 
@@ -396,8 +446,10 @@ const debouncedSetVol = debounce(async (vol) => {
   const cappedVol = clampToUserVolumeLimit(vol);
   if (!currentSession) currentSession = { captureState: CAPTURE_STATE.IDLE, volume: cappedVol, safeBoost: true };
   currentSession.volume = cappedVol;
-  await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: cappedVol });
-  await refreshPlayingTabs();
+  await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: cappedVol }).catch((err) => {
+    console.warn('[Boostune] Could not set debounced volume', err);
+  });
+  await safeRefreshPlayingTabs();
 }, 80);
 
 volumeSliderEl.addEventListener('mousedown', () => { _sliderDragging = true; });
@@ -413,8 +465,10 @@ volumeSliderEl.addEventListener('change', async () => {
   _sliderDragging = false;
   const v = clampToUserVolumeLimit(parseInt(volumeSliderEl.value, 10));
   setVolumeUI(v);
-  await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: v });
-  await refreshPlayingTabs();
+  await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: v }).catch((err) => {
+    showError(err.message || 'Failed to set volume.');
+  });
+  await safeRefreshPlayingTabs();
 });
 
 volDownEl.addEventListener('click', () => nudge(-VOLUME.STEP));
@@ -427,8 +481,10 @@ async function nudge(delta) {
   setVolumeUI(newVol);
   if (!currentSession) currentSession = { volume: newVol, captureState: CAPTURE_STATE.IDLE, safeBoost: true };
   currentSession.volume = newVol;
-  await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: newVol });
-  await refreshPlayingTabs();
+  await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: newVol }).catch((err) => {
+    showError(err.message || 'Failed to set volume.');
+  });
+  await safeRefreshPlayingTabs();
 }
 
 // Preset buttons
@@ -438,8 +494,10 @@ document.querySelectorAll('.preset-btn').forEach((btn) => {
     setVolumeUI(v);
     if (!currentSession) currentSession = { volume: v, captureState: CAPTURE_STATE.IDLE, safeBoost: true };
     currentSession.volume = v;
-    await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: v });
-    await refreshPlayingTabs();
+    await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: v }).catch((err) => {
+      showError(err.message || 'Failed to set volume.');
+    });
+    await safeRefreshPlayingTabs();
   });
 });
 
@@ -451,7 +509,9 @@ safeBoostToggleEl.addEventListener('change', async (e) => {
   if (!currentSession) currentSession = { volume: 100, captureState: CAPTURE_STATE.IDLE, safeBoost: enabled };
   currentSession.safeBoost = enabled;
   if (currentTabId) {
-    await sw(MSG.BOOST_TOGGLE_SAFE_BOOST, { tabId: currentTabId, enabled });
+    await sw(MSG.BOOST_TOGGLE_SAFE_BOOST, { tabId: currentTabId, enabled }).catch((err) => {
+      showError(err.message || 'Failed to update Safe Boost.');
+    });
   }
 });
 
@@ -479,7 +539,6 @@ function openPrivacy() {
   platformApi.tabs.create({ url: platformApi.runtime.getURL('PRIVACY.md') });
 }
 
-settingsBtnEl.addEventListener('click', openSettings);
 footerSettingsEl.addEventListener('click', openSettings);
 footerSettingsEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') {
@@ -504,7 +563,7 @@ function onSWMessage(message) {
   if (message.type === MSG.BOOST_STATE_CHANGED && message.tabId === currentTabId) {
     currentSession = message.state;
     renderState();
-    refreshPlayingTabs();
+    safeRefreshPlayingTabs();
     return;
   }
 
@@ -520,8 +579,14 @@ function onSWMessage(message) {
 
   // State changed for a different tab — refresh the playing list
   if (message.type === MSG.BOOST_STATE_CHANGED) {
-    refreshPlayingTabs();
+    safeRefreshPlayingTabs();
   }
+}
+
+function startRuntimeListener() {
+  if (_listeningForRuntimeMessages) return;
+  platformApi.runtime.onMessage.addListener(onSWMessage);
+  _listeningForRuntimeMessages = true;
 }
 
 // ── Error display ─────────────────────────────────────────────
@@ -559,10 +624,11 @@ function escHtml(str) {
 
 // ── Periodic refresh of playing tabs list ─────────────────────
 // Poll every 3s to detect new audible tabs without event-driven hooks.
-setInterval(refreshPlayingTabs, 3000);
+setInterval(safeRefreshPlayingTabs, 3000);
 
 // ── Boot ──────────────────────────────────────────────────────
 init().catch((e) => {
   console.error('[Boostune] popup init failed', e);
+  window.__boostuneInitError = e?.message || String(e);
   showError('Boostune failed to initialise. Please reload.');
 });

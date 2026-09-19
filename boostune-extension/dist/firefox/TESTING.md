@@ -177,3 +177,14 @@ A build is considered passing when:
 - [x] Tested in Firefox
 - [x] README complete
 - [x] Privacy documentation included
+
+---
+
+## Browser Test Matrix
+
+| Browser | Version | OS | Site Tested | Feature Tested | Result | Known Issues |
+|---|---|---|---|---|---|---|
+| Google Chrome | (User input) | Windows | YouTube | Audio pipeline, volume, Safe Boost, lifecycle | ✅ Verified | None |
+| Microsoft Edge | (User input) | Windows | (To be tested) | Audio pipeline, volume, Safe Boost, lifecycle | ⏳ Not tested | N/A |
+| Brave Browser | (User input) | Windows | (To be tested) | Audio pipeline, volume, Safe Boost, lifecycle | ⏳ Not tested | N/A |
+| Mozilla Firefox | (User input) | Windows | HTML5 Audio/Video | Audio pipeline, volume, Safe Boost, lifecycle | ✅ Verified | None |

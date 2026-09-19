@@ -22,7 +22,6 @@ const onboardingEl     = $('onboarding');
 const mainUiEl         = $('mainUi');
 const powerToggleEl    = $('powerToggle');
 const powerLabelEl     = $('powerLabel');
-const settingsBtnEl    = $('settingsBtn');
 const errorBannerEl    = $('errorBanner');
 const errorMessageEl   = $('errorMessage');
 const tabFaviconWrapEl = $('tabFaviconWrap');
@@ -73,13 +72,11 @@ async function init() {
   applyVolumeLimit();
   renderState();
 
-  // Older builds could persist this as false. Do not block the popup shell:
-  // toolbar clicks must always show controls immediately.
   if (!prefs.onboardingCompleted) {
-    prefs.onboardingCompleted = true;
-    updatePrefs({ onboardingCompleted: true }).catch((err) => {
-      console.warn('[Boostune] Could not mark onboarding complete', err);
-    });
+    showOnboarding();
+  } else {
+    mainUiEl.classList.remove('hidden');
+    onboardingEl.classList.add('hidden');
   }
 
   // Get current tab
@@ -542,7 +539,6 @@ function openPrivacy() {
   platformApi.tabs.create({ url: platformApi.runtime.getURL('PRIVACY.md') });
 }
 
-settingsBtnEl.addEventListener('click', openSettings);
 footerSettingsEl.addEventListener('click', openSettings);
 footerSettingsEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') {

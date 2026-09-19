@@ -4,19 +4,24 @@
  * and falling back appropriately between `chrome.*` and `browser.*`.
  */
 
-const api = typeof browser !== 'undefined' ? browser : chrome;
+const api = globalThis.browser ?? globalThis.chrome;
+const isFirefox = Boolean(globalThis.browser);
+
+if (!api) {
+  throw new Error('Boostune extension APIs are unavailable in this context.');
+}
 
 export const platformApi = {
   runtime: {
     sendMessage: (msg) => {
       // Return a Promise in both Chrome and Firefox
-      if (typeof browser !== 'undefined') {
-        return browser.runtime.sendMessage(msg);
+      if (isFirefox) {
+        return api.runtime.sendMessage(msg);
       }
       return new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage(msg, (response) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message));
+        api.runtime.sendMessage(msg, (response) => {
+          if (api.runtime.lastError) {
+            reject(new Error(api.runtime.lastError.message));
           } else {
             resolve(response);
           }
@@ -34,64 +39,64 @@ export const platformApi = {
   },
   tabs: {
     get: (tabId) => {
-      if (typeof browser !== 'undefined') {
-        return browser.tabs.get(tabId);
+      if (isFirefox) {
+        return api.tabs.get(tabId);
       }
       return new Promise((resolve, reject) => {
-        chrome.tabs.get(tabId, (tab) => {
-          if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+        api.tabs.get(tabId, (tab) => {
+          if (api.runtime.lastError) reject(new Error(api.runtime.lastError.message));
           else resolve(tab);
         });
       });
     },
     query: (queryInfo) => {
-      if (typeof browser !== 'undefined') {
-        return browser.tabs.query(queryInfo);
+      if (isFirefox) {
+        return api.tabs.query(queryInfo);
       }
       return new Promise((resolve) => {
-        chrome.tabs.query(queryInfo, resolve);
+        api.tabs.query(queryInfo, resolve);
       });
     },
     create: (createProperties) => {
-      if (typeof browser !== 'undefined') {
-        return browser.tabs.create(createProperties);
+      if (isFirefox) {
+        return api.tabs.create(createProperties);
       }
       return new Promise((resolve) => {
-        chrome.tabs.create(createProperties, resolve);
+        api.tabs.create(createProperties, resolve);
       });
     },
   },
   storage: {
     sync: {
       get: (keys) => {
-        if (typeof browser !== 'undefined') {
-          return browser.storage.sync.get(keys);
+        if (isFirefox) {
+          return api.storage.sync.get(keys);
         }
         return new Promise((resolve, reject) => {
-          chrome.storage.sync.get(keys, (items) => {
-            if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+          api.storage.sync.get(keys, (items) => {
+            if (api.runtime.lastError) reject(new Error(api.runtime.lastError.message));
             else resolve(items);
           });
         });
       },
       set: (items) => {
-        if (typeof browser !== 'undefined') {
-          return browser.storage.sync.set(items);
+        if (isFirefox) {
+          return api.storage.sync.set(items);
         }
         return new Promise((resolve, reject) => {
-          chrome.storage.sync.set(items, () => {
-            if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+          api.storage.sync.set(items, () => {
+            if (api.runtime.lastError) reject(new Error(api.runtime.lastError.message));
             else resolve();
           });
         });
       },
       remove: (keys) => {
-        if (typeof browser !== 'undefined') {
-          return browser.storage.sync.remove(keys);
+        if (isFirefox) {
+          return api.storage.sync.remove(keys);
         }
         return new Promise((resolve, reject) => {
-          chrome.storage.sync.remove(keys, () => {
-            if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+          api.storage.sync.remove(keys, () => {
+            if (api.runtime.lastError) reject(new Error(api.runtime.lastError.message));
             else resolve();
           });
         });
@@ -103,36 +108,36 @@ export const platformApi = {
     session: {
       get: (keys) => {
         const storageObj = api.storage.session || api.storage.local;
-        if (typeof browser !== 'undefined') {
+        if (isFirefox) {
           return storageObj.get(keys);
         }
         return new Promise((resolve, reject) => {
           storageObj.get(keys, (items) => {
-            if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+            if (api.runtime.lastError) reject(new Error(api.runtime.lastError.message));
             else resolve(items);
           });
         });
       },
       set: (items) => {
         const storageObj = api.storage.session || api.storage.local;
-        if (typeof browser !== 'undefined') {
+        if (isFirefox) {
           return storageObj.set(items);
         }
         return new Promise((resolve, reject) => {
           storageObj.set(items, () => {
-            if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+            if (api.runtime.lastError) reject(new Error(api.runtime.lastError.message));
             else resolve();
           });
         });
       },
       remove: (keys) => {
         const storageObj = api.storage.session || api.storage.local;
-        if (typeof browser !== 'undefined') {
+        if (isFirefox) {
           return storageObj.remove(keys);
         }
         return new Promise((resolve, reject) => {
           storageObj.remove(keys, () => {
-            if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+            if (api.runtime.lastError) reject(new Error(api.runtime.lastError.message));
             else resolve();
           });
         });
@@ -141,11 +146,11 @@ export const platformApi = {
   },
   commands: {
     getAll: () => {
-      if (typeof browser !== 'undefined') {
-        return browser.commands.getAll();
+      if (isFirefox) {
+        return api.commands.getAll();
       }
       return new Promise((resolve) => {
-        chrome.commands.getAll(resolve);
+        api.commands.getAll(resolve);
       });
     }
   }

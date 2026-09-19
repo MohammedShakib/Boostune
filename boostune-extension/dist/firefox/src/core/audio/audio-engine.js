@@ -48,10 +48,17 @@ export class AudioSession {
 
     this._ctx = new AudioContext();
 
-    // Chrome sometimes auto-suspends new contexts; resume explicitly.
+    // Chrome/Edge sometimes auto-suspends new contexts; resume explicitly.
     if (this._ctx.state === 'suspended') {
       await this._ctx.resume();
     }
+    
+    // Fallback: forcefully resume if still suspended (fixes some Edge quirks)
+    this._resumeInterval = setInterval(() => {
+      if (this._ctx && this._ctx.state === 'suspended') {
+        this._ctx.resume().catch(() => {});
+      }
+    }, 1000);
 
     this._source   = this._ctx.createMediaStreamSource(this.stream);
     this._gainNode = this._ctx.createGain();
@@ -91,6 +98,11 @@ export class AudioSession {
     // Close the AudioContext to free system audio resources
     try { await this._ctx.close(); } catch {}
 
+    if (this._resumeInterval) {
+      clearInterval(this._resumeInterval);
+      this._resumeInterval = null;
+    }
+
     this._source     = null;
     this._gainNode   = null;
     this._compressor = null;
@@ -109,6 +121,11 @@ export class AudioSession {
   setVolume(volume) {
     if (!this.active || !this._gainNode || !this._ctx) return;
     this._volume = volume;
+
+    if (this._ctx.state === 'suspended') {
+      this._ctx.resume().catch(() => {});
+    }
+
     this._gainNode.gain.setTargetAtTime(
       volumeToGain(volume),
       this._ctx.currentTime,

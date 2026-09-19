@@ -1,178 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=360, initial-scale=1.0" />
   <title>Boostune</title>
-  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="popup.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-  <!-- ── Onboarding Overlay (shown on first launch) ──────── -->
-  <div class="onboarding hidden" id="onboarding" role="dialog" aria-label="Welcome to Boostune">
-    <img class="onboarding__logo" src="../../assets/icons/icon128.png" alt="Boostune logo">
-    <h1 class="onboarding__title">Welcome to Boostune</h1>
-    <p class="onboarding__sub">Boost Every Tab</p>
-    <div class="onboarding__steps">
-      <div class="onboarding__step">
-        <div class="onboarding__step-num">1</div>
-        <div class="onboarding__step-text">
-          <strong>Choose a tab</strong>
-          <span>Open any tab playing audio — YouTube, Spotify, a video call.</span>
-        </div>
-      </div>
-      <div class="onboarding__step">
-        <div class="onboarding__step-num">2</div>
-        <div class="onboarding__step-text">
-          <strong>Boost the audio</strong>
-          <span>Click the toggle to activate Boostune, then drag the slider.</span>
-        </div>
-      </div>
-      <div class="onboarding__step">
-        <div class="onboarding__step-num">3</div>
-        <div class="onboarding__step-text">
-          <strong>Use Safe Boost</strong>
-          <span>Keep it ON to reduce clipping at high volumes.</span>
-        </div>
-      </div>
+  <!-- ==================== ONBOARDING OVERLAY ==================== -->
+  <div id="onboarding" class="onboarding-overlay hidden">
+    <div class="onboarding-content">
+      <img src="../../assets/icons/icon128.png" alt="Boostune Logo" class="onboarding-logo" />
+      <h1 class="onboarding-title">Welcome to Boostune</h1>
+      <p class="onboarding-text">Boost audio up to 600% on any tab.</p>
+      <ul class="onboarding-list">
+        <li><strong>Per-tab Control:</strong> Adjust volume for individual tabs.</li>
+        <li><strong>Safe Boost:</strong> Built-in compressor to prevent clipping.</li>
+      </ul>
+      <button id="onboardingDone" class="btn-primary">Get Started</button>
     </div>
-    <button class="onboarding__btn" id="onboardingDone">Get Started</button>
   </div>
 
-  <!-- ── Main UI ──────────────────────────────────────────── -->
-  <div class="main-ui" id="mainUi">
+  <!-- ==================== MAIN UI ==================== -->
+  <div id="mainUi" class="main-ui hidden">
+    
+    <!-- ── Error Banner ── -->
+    <div id="errorBanner" class="error-banner hidden" role="alert">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="errorMessage">Boostune can't control audio on this browser page.</span>
+    </div>
 
-    <!-- Header -->
+    <!-- ── Header ── -->
     <header class="header">
-      <div class="header__brand">
-        <img class="header__logo" src="../../assets/icons/icon48.png" alt="Boostune" id="headerLogo">
-        <div class="header__title-block">
-          <span class="header__name">BOOSTUNE</span>
-          <span class="header__tagline">Boost Every Tab</span>
-        </div>
-      </div>
-      <div class="header__controls">
-        <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Open Settings">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      <img src="../../assets/brand/boostune-logo-horizontal.png" alt="Boostune Logo" class="header-logo" id="headerLogo" />
+      <div class="header-actions">
+        <button id="settingsBtn" class="icon-btn" aria-label="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path><circle cx="12" cy="12" r="3"></circle>
           </svg>
         </button>
-        <button class="power-toggle" id="powerToggle" aria-label="Toggle Boostune for this tab" aria-pressed="false">
-          <span class="power-toggle__dot"></span>
-          <span class="power-toggle__label" id="powerLabel">Inactive</span>
-        </button>
+        <div class="toggle-switch-container header-power">
+          <label class="toggle-switch">
+            <input type="checkbox" id="powerToggle" />
+            <span class="slider round"></span>
+          </label>
+          <span class="power-label" id="powerLabel">OFF</span>
+        </div>
       </div>
     </header>
 
-    <!-- Error / Warning Banner -->
-    <div class="banner error hidden" id="errorBanner" role="alert">
-      <svg class="banner__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      <span id="errorMessage">Error message</span>
+    <!-- ── Volume Display ── -->
+    <div class="volume-display-section">
+      <img src="../../assets/brand/boostune-waveform.png" class="waveform-img" alt="waveform left" />
+      <div class="volume-center">
+        <div class="volume-value">
+          <span id="volumeNumber">100</span><span class="volume-percent">%</span>
+        </div>
+        <div class="volume-label">TAB VOLUME</div>
+      </div>
+      <img src="../../assets/brand/boostune-waveform.png" class="waveform-img" alt="waveform right" />
     </div>
 
-    <!-- Current Tab Card -->
-    <div class="section-label">Current Tab</div>
-    <div class="tab-card" id="currentTabCard" aria-label="Current tab information">
-      <div class="tab-card__favicon tab-card__favicon--placeholder" id="tabFaviconWrap">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
-      </div>
-      <div class="tab-card__info">
-        <div class="tab-card__title" id="tabTitle">Loading…</div>
-        <div class="tab-card__domain" id="tabDomain">—</div>
-      </div>
-      <div class="tab-card__status">
-        <span class="status-pill status-pill--idle" id="statusPill">Idle</span>
+    <!-- ── Slider Controls ── -->
+    <div class="slider-section">
+      <input type="range" id="volumeSlider" min="0" max="600" step="5" value="100" class="gradient-slider" aria-label="Tab volume" />
+      <div class="slider-ticks">
+        <span>0%</span>
+        <span>600%</span>
       </div>
     </div>
 
-    <!-- Volume Section -->
-    <div class="volume-section">
-      <div class="volume-display" aria-live="polite">
-        <span class="volume-display__number" id="volumeNumber">100</span>
-        <span class="volume-display__unit">%</span>
-      </div>
+    <!-- ── Presets ── -->
+    <div class="presets-row">
+      <button class="preset-btn" data-vol="50">50%</button>
+      <button class="preset-btn preset-btn--active" data-vol="100">100%</button>
+      <button class="preset-btn" data-vol="150">150%</button>
+      <button class="preset-btn" data-vol="200">200%</button>
+      <button class="preset-btn" data-vol="300">300%</button>
+      <button class="preset-btn" data-vol="400">400%</button>
+      <button class="preset-btn" data-vol="600">600%</button>
+    </div>
 
-      <div class="slider-container">
-        <div class="slider-labels">
-          <span>0%</span>
-          <span id="volumeMidLabel">300%</span>
-          <span id="volumeMaxLabel">600%</span>
-        </div>
-        <input
-          type="range"
-          class="volume-slider"
-          id="volumeSlider"
-          min="0"
-          max="600"
-          step="10"
-          value="100"
-          aria-label="Volume"
-          aria-valuemin="0"
-          aria-valuemax="600"
-          aria-valuenow="100"
-        >
-      </div>
-
-      <!-- +/- and presets -->
-      <div class="controls-row">
-        <button class="step-btn" id="volDown" aria-label="Decrease volume by 10%">−</button>
-        <div class="presets-scroll" role="group" aria-label="Volume presets">
-          <button class="preset-btn" data-vol="50"  aria-label="Set 50%">50%</button>
-          <button class="preset-btn preset-btn--default" data-vol="100" aria-label="Reset to 100%">100%</button>
-          <button class="preset-btn" data-vol="150" aria-label="Set 150%">150%</button>
-          <button class="preset-btn" data-vol="200" aria-label="Set 200%">200%</button>
-          <button class="preset-btn" data-vol="300" aria-label="Set 300%">300%</button>
-          <button class="preset-btn" data-vol="400" aria-label="Set 400%">400%</button>
-          <button class="preset-btn" data-vol="600" aria-label="Set 600%">600%</button>
-        </div>
-        <button class="step-btn" id="volUp" aria-label="Increase volume by 10%">+</button>
-      </div>
-
-      <!-- Safe Boost -->
-      <div class="safe-boost active" id="safeBoostCard" role="button" aria-label="Toggle Safe Boost" tabindex="0">
-        <div class="safe-boost__left">
-          <div class="safe-boost__icon" aria-hidden="true">🛡</div>
-          <div>
-            <div class="safe-boost__label">Safe Boost</div>
-            <div class="safe-boost__desc">Reduces clipping at high volumes</div>
+    <!-- ── Current Tab Card ── -->
+    <div class="glass-card current-tab-card" id="currentTabCard">
+      <div class="card-top">
+        <div class="tab-meta">
+          <div id="tabFaviconWrap" class="favicon-wrap"></div>
+          <div class="tab-text">
+            <div id="tabTitle" class="tab-title">Untitled</div>
+            <div id="tabDomain" class="tab-domain">example.com</div>
           </div>
         </div>
-        <label class="toggle-switch" aria-label="Safe Boost">
-          <input type="checkbox" id="safeBoostToggle" checked aria-label="Safe Boost enabled">
-          <span class="toggle-track"></span>
-        </label>
+        <div id="statusPill" class="status-pill status-pill--idle">Idle</div>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-bottom">
+        <div class="bottom-metric">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--brand-primary)" stroke="none">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14l-1.41-1.41a8 8 0 0 0 0-11.32l1.41-1.41z"></path>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07l-1.41-1.41a3 3 0 0 0 0-4.24l1.41-1.41z"></path>
+          </svg>
+          <div class="metric-text">
+            <span class="metric-label">Current Volume</span>
+            <span class="metric-value" id="currentTabVolText">100%</span>
+          </div>
+        </div>
+        <div class="bottom-metric" id="safeBoostCard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <div class="metric-text">
+            <span class="metric-label">Safe Boost</span>
+            <span class="metric-sub">Helps prevent distortion</span>
+          </div>
+          <label class="toggle-switch small-toggle">
+            <input type="checkbox" id="safeBoostToggle" checked />
+            <span class="slider round"></span>
+          </label>
+        </div>
       </div>
     </div>
 
-    <div class="divider" style="margin: 10px 0 0"></div>
-
-    <!-- Playing Tabs -->
-    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:16px">
-      <span>Playing Tabs</span>
-      <span id="playingCount" style="font-size:10px;color:var(--text-muted)"></span>
+    <!-- ── Playing Tabs ── -->
+    <div class="playing-tabs-section">
+      <div class="section-header">
+        <span class="section-title">PLAYING TABS <span id="playingCount">(0)</span></span>
+        <span class="section-subtitle">Boosting audio across your browser</span>
+      </div>
+      <div id="playingTabsList" class="playing-tabs-list">
+        <!-- JS populated -->
+      </div>
     </div>
 
-    <div class="playing-tabs" id="playingTabsList" role="list" aria-label="Playing tabs">
-      <div class="empty-state">No tabs with audio detected.</div>
-    </div>
-
-    <!-- Footer -->
+    <!-- ── Footer ── -->
     <footer class="footer">
-      <div class="footer__links">
-        <span class="footer__link" id="footerSettings" role="button" tabindex="0">Settings</span>
-        <span class="footer__link" id="footerPrivacy" role="button" tabindex="0">Privacy</span>
+      <div class="footer-left">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--brand-primary)" stroke="none">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+        <div class="footer-text">
+          <span class="footer-strong">More Volume. Works on Any Site.</span>
+          <span class="footer-sub">Videos, music, meetings. Just boost and enjoy.</span>
+        </div>
       </div>
-      <span class="footer__version" id="versionLabel">v1.0.0</span>
+      <div class="footer-right">
+        <span class="signature-text">A Louder<br>Web Awaits</span>
+      </div>
     </footer>
+  </div>
 
-  </div><!-- /main-ui -->
-
-  <script type="module" src="popup.js"></script>
+  <script src="popup.js" type="module"></script>
 </body>
 </html>

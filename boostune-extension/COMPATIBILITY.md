@@ -4,12 +4,12 @@ Boostune is a cross-browser extension designed to run on Chromium-based browsers
 
 ## Supported Browsers
 
-| Browser | Minimum Version | Support Level | Architecture Strategy |
+| Browser | Minimum Version | Status | Architecture Strategy |
 |---------|-----------------|---------------|------------------------|
-| Google Chrome | 116+ | Official | Offscreen Document + `chrome.tabCapture` |
-| Microsoft Edge | 116+ | Official | Offscreen Document + `chrome.tabCapture` |
-| Brave Browser | 116+ | Official | Offscreen Document + `chrome.tabCapture` |
-| Mozilla Firefox | 109+ | Official | Content Script + Page Audio (Main World) |
+| Google Chrome | 116+ | ✅ Verified | Offscreen Document + `chrome.tabCapture` |
+| Microsoft Edge | 116+ | ⏳ Not tested | Offscreen Document + `chrome.tabCapture` |
+| Brave Browser | 116+ | ⏳ Not tested | Offscreen Document + `chrome.tabCapture` |
+| Mozilla Firefox | 109+ | ✅ Verified | Content Script + Page Audio (Main World) |
 
 ## Architectural Strategies
 
