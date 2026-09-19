@@ -145,7 +145,7 @@ chrome://extensions
 ```
 boostune-extension/
 â”œâ”€â”€ manifest.json                        â† MV3 manifest
-â”œâ”€â”€ README.md Â· PRIVACY.md Â· TESTING.md
+â”œâ”€â”€ PRIVACY.md Â· TESTING.md
 â”‚
 â”œâ”€â”€ src/
 â”‚   â”œâ”€â”€ background/
