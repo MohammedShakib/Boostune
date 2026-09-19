@@ -3,8 +3,6 @@
    Matches the popup design system for visual consistency.
    ================================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 :root {
   --bg-base:       #0d0d1c;
   --bg-card:       #14142a;
@@ -38,7 +36,7 @@
 html, body {
   background: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;

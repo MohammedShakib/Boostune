@@ -1,10 +1,8 @@
 /* ================================================================
    Boostune — Popup Styles
    Design system: deep navy base, electric-blue/cyan accent,
-   Inter typeface, premium micro-interactions throughout.
+   system typeface, premium micro-interactions throughout.
    ================================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* ── Design Tokens ─────────────────────────────────────────── */
 :root {
@@ -64,7 +62,7 @@ body {
   min-width: var(--popup-width);
   background: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 13px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;

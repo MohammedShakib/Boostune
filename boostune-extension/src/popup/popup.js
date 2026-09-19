@@ -31,6 +31,8 @@ const statusPillEl     = $('statusPill');
 const currentTabCardEl = $('currentTabCard');
 const volumeNumberEl   = $('volumeNumber');
 const volumeSliderEl   = $('volumeSlider');
+const volumeMidLabelEl = $('volumeMidLabel');
+const volumeMaxLabelEl = $('volumeMaxLabel');
 const volDownEl        = $('volDown');
 const volUpEl          = $('volUp');
 const safeBoostCardEl  = $('safeBoostCard');
@@ -59,6 +61,7 @@ async function init() {
 
   // Load preferences
   prefs = await getPrefs();
+  applyVolumeLimit();
 
   // Check onboarding
   if (!prefs.onboardingCompleted) {
@@ -180,6 +183,32 @@ function renderState() {
   }
 }
 
+function getMaxVolume() {
+  const max = Number(prefs.maxVolume);
+  return clamp(Number.isFinite(max) ? max : VOLUME.MAX, VOLUME.MIN, VOLUME.MAX);
+}
+
+function clampToUserVolumeLimit(volume) {
+  const parsed = Number(volume);
+  return clamp(Number.isFinite(parsed) ? parsed : VOLUME.DEFAULT, VOLUME.MIN, getMaxVolume());
+}
+
+function applyVolumeLimit() {
+  const max = getMaxVolume();
+  const midpoint = Math.round(max / 2 / VOLUME.STEP) * VOLUME.STEP;
+
+  volumeSliderEl.max = String(max);
+  volumeSliderEl.setAttribute('aria-valuemax', String(max));
+  if (volumeMidLabelEl) volumeMidLabelEl.textContent = `${midpoint}%`;
+  if (volumeMaxLabelEl) volumeMaxLabelEl.textContent = `${max}%`;
+
+  document.querySelectorAll('.preset-btn').forEach((btn) => {
+    const presetVolume = parseInt(btn.dataset.vol, 10);
+    btn.disabled = presetVolume > max;
+    btn.hidden = presetVolume > max;
+  });
+}
+
 function renderStatusPill(state) {
   const map = {
     [CAPTURE_STATE.IDLE]:     ['status-pill--idle',     'Idle'],
@@ -195,7 +224,7 @@ function renderStatusPill(state) {
 
 /** Update slider, number display, fill, and ARIA attributes. */
 function setVolumeUI(volume, animate = true) {
-  const v = clamp(volume, VOLUME.MIN, VOLUME.MAX);
+  const v = clampToUserVolumeLimit(volume);
 
   if (!_sliderDragging) {
     volumeSliderEl.value = v;
@@ -205,7 +234,7 @@ function setVolumeUI(volume, animate = true) {
   volumeNumberEl.setAttribute('aria-valuenow', v);
 
   // Update slider fill via CSS custom property
-  const pct = (v / VOLUME.MAX) * 100;
+  const pct = getMaxVolume() === 0 ? 0 : (v / getMaxVolume()) * 100;
   volumeSliderEl.style.setProperty('--fill', `${pct}%`);
 
   // Highlight matching preset button
@@ -363,9 +392,10 @@ function setStatus(state) {
 
 const debouncedSetVol = debounce(async (vol) => {
   if (!currentTabId) return;
-  if (!currentSession) currentSession = { captureState: CAPTURE_STATE.IDLE, volume: vol, safeBoost: true };
-  currentSession.volume = vol;
-  await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: vol });
+  const cappedVol = clampToUserVolumeLimit(vol);
+  if (!currentSession) currentSession = { captureState: CAPTURE_STATE.IDLE, volume: cappedVol, safeBoost: true };
+  currentSession.volume = cappedVol;
+  await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: cappedVol });
   await refreshPlayingTabs();
 }, 80);
 
@@ -373,14 +403,14 @@ volumeSliderEl.addEventListener('mousedown', () => { _sliderDragging = true; });
 volumeSliderEl.addEventListener('touchstart', () => { _sliderDragging = true; }, { passive: true });
 
 volumeSliderEl.addEventListener('input', () => {
-  const v = parseInt(volumeSliderEl.value, 10);
+  const v = clampToUserVolumeLimit(parseInt(volumeSliderEl.value, 10));
   setVolumeUI(v);
   debouncedSetVol(v);
 });
 
 volumeSliderEl.addEventListener('change', async () => {
   _sliderDragging = false;
-  const v = parseInt(volumeSliderEl.value, 10);
+  const v = clampToUserVolumeLimit(parseInt(volumeSliderEl.value, 10));
   setVolumeUI(v);
   await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: v });
   await refreshPlayingTabs();
@@ -392,7 +422,7 @@ volUpEl.addEventListener('click',   () => nudge(+VOLUME.STEP));
 async function nudge(delta) {
   if (!currentTabId) return;
   const current = currentSession?.volume ?? 100;
-  const newVol  = clamp(current + delta, VOLUME.MIN, VOLUME.MAX);
+  const newVol  = clampToUserVolumeLimit(current + delta);
   setVolumeUI(newVol);
   if (!currentSession) currentSession = { volume: newVol, captureState: CAPTURE_STATE.IDLE, safeBoost: true };
   currentSession.volume = newVol;
@@ -403,7 +433,7 @@ async function nudge(delta) {
 // Preset buttons
 document.querySelectorAll('.preset-btn').forEach((btn) => {
   btn.addEventListener('click', async () => {
-    const v = parseInt(btn.dataset.vol, 10);
+    const v = clampToUserVolumeLimit(parseInt(btn.dataset.vol, 10));
     setVolumeUI(v);
     if (!currentSession) currentSession = { volume: v, captureState: CAPTURE_STATE.IDLE, safeBoost: true };
     currentSession.volume = v;
@@ -444,14 +474,26 @@ function openSettings() {
   chrome.runtime.openOptionsPage();
 }
 
+function openPrivacy() {
+  chrome.tabs.create({ url: chrome.runtime.getURL('PRIVACY.md') });
+}
+
 settingsBtnEl.addEventListener('click', openSettings);
 footerSettingsEl.addEventListener('click', openSettings);
-footerSettingsEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') openSettings(); });
-
-footerPrivacyEl.addEventListener('click', () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL('PRIVACY.md') });
+footerSettingsEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    openSettings();
+  }
 });
-footerPrivacyEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') openSettings(); });
+
+footerPrivacyEl.addEventListener('click', openPrivacy);
+footerPrivacyEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    openPrivacy();
+  }
+});
 
 // ── Incoming messages from SW ─────────────────────────────────
 

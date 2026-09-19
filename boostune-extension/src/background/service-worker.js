@@ -167,6 +167,7 @@ async function startBoost(tabId) {
       session.volume = prefs.defaultVolume;
     }
   }
+  session.volume = clampVolumeForPrefs(session.volume, prefs);
 
   broadcastState(tabId, { ...session });
   await setSessionState(tabId, session);
@@ -270,7 +271,8 @@ async function stopBoost(tabId) {
 // ── Core: Change volume for a tab ────────────────────────────
 
 async function setVolume(tabId, volume) {
-  const vol     = clamp(volume, VOLUME.MIN, VOLUME.MAX);
+  const prefs   = await getPrefs();
+  const vol     = clampVolumeForPrefs(volume, prefs);
   const session = getOrCreateSession(tabId);
   session.volume = vol;
 
@@ -284,7 +286,6 @@ async function setVolume(tabId, volume) {
   }
 
   // Remember volume per domain if preference is set
-  const prefs = await getPrefs();
   if (prefs.rememberVolume) {
     const tab = await chrome.tabs.get(tabId).catch(() => null);
     if (tab?.url) {
@@ -497,4 +498,11 @@ log.info('Boostune Service Worker started');
 
 function _sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function clampVolumeForPrefs(volume, prefs = {}) {
+  const parsedMax = Number(prefs.maxVolume);
+  const parsedVolume = Number(volume);
+  const max = clamp(Number.isFinite(parsedMax) ? parsedMax : VOLUME.MAX, VOLUME.MIN, VOLUME.MAX);
+  return clamp(Number.isFinite(parsedVolume) ? parsedVolume : VOLUME.DEFAULT, VOLUME.MIN, max);
 }

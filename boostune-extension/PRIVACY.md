@@ -29,7 +29,7 @@ It makes **zero network requests**.
 | Record audio | The captured audio stream is processed transiently and discarded. No audio data is written to disk or persistent memory. |
 | Transmit audio | No audio data is sent to any server, API, or third party. |
 | Collect analytics | There is no analytics or telemetry code in Boostune. |
-| Use third-party scripts | All code runs locally. There are no third-party JavaScript libraries or CDN dependencies (except Google Fonts loaded by the popup/options UI — purely cosmetic). |
+| Use third-party scripts | All code runs locally. There are no third-party JavaScript libraries or CDN dependencies. |
 | Store browsing history | Tab URLs and titles displayed in the popup are used only for display during that session and are not persisted beyond `chrome.storage.session` (which is cleared when the browser closes). |
 | Inject content scripts | Boostune does not inject scripts into any webpage. It uses only browser extension APIs. |
 | Access microphone | Boostune captures tab audio only, not microphone input. |
@@ -63,9 +63,9 @@ Tab IDs are session-identifiers provided by Chrome — they are ephemeral and **
 
 ---
 
-## Google Fonts
+## Fonts
 
-The popup and options page load **Inter** from Google Fonts via a standard `@import` in CSS. This is a one-time CSS request to `fonts.googleapis.com`. No user data beyond standard HTTP request headers is sent. If you prefer full offline operation, replace the Google Fonts import with a locally bundled copy of Inter.
+The popup and options page use system fonts only. Boostune does not load fonts, scripts, styles, or other assets from external servers.
 
 ---
 

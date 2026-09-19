@@ -147,12 +147,24 @@ boostune-extension/
 │       └── utils.js                 # Logger, clamp, URL helpers, error mapping
 │
 └── assets/
-    └── icons/
-        ├── icon.svg
-        ├── icon16.png
-        ├── icon32.png
-        ├── icon48.png
-        └── icon128.png
+    ├── brand/
+    │   ├── boostune-logo-horizontal.png
+    │   ├── boostune-mark.png
+    │   ├── boostune-badge.png
+    │   └── boostune-waveform.png
+    │
+    ├── icons/
+    │   ├── icon.svg
+    │   ├── icon16.png
+    │   ├── icon32.png
+    │   ├── icon48.png
+    │   └── icon128.png
+    │
+    └── mockups/
+        ├── boostune-popup-mockup.png
+        ├── boostune-settings-mockup.png
+        ├── boostune-hero-banner.png
+        └── boostune-brand-board.png
 ```
 
 ---

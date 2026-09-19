@@ -13,11 +13,21 @@ import { MSG } from '../shared/constants.js';
 import { log } from '../shared/utils.js';
 import { sessionManager } from '../audio/audio-session-manager.js';
 
+const OFFSCREEN_MESSAGE_TYPES = new Set([
+  MSG.OFFSCREEN_START,
+  MSG.OFFSCREEN_STOP,
+  MSG.OFFSCREEN_SET_VOLUME,
+  MSG.OFFSCREEN_SET_SAFE_BOOST,
+  MSG.OFFSCREEN_GET_SESSIONS,
+]);
+
 // ── Message listener ──────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  // Only process messages directed at the offscreen document
-  if (!message || !message.type) return false;
+  // Only process messages directed at the offscreen document.
+  // Runtime messages are broadcast to extension contexts; replying to popup
+  // or options messages here can race the service worker's real response.
+  if (!message || !OFFSCREEN_MESSAGE_TYPES.has(message.type)) return false;
 
   dispatch(message)
     .then(sendResponse)
