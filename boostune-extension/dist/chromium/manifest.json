@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "name": "Boostune",
+  "short_name": "Boostune",
+  "version": "1.0.0",
+  "description": "Boost, balance, and control audio for individual browser tabs. Volume from 0% to 600% with per-tab control.",
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "Boostune - Boost Every Tab",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "options_page": "src/options/options.html",
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "commands": {
+    "volume-up": {
+      "suggested_key": {
+        "default": "Alt+Up",
+        "mac": "Alt+Up"
+      },
+      "description": "Increase volume by 10%"
+    },
+    "volume-down": {
+      "suggested_key": {
+        "default": "Alt+Down",
+        "mac": "Alt+Down"
+      },
+      "description": "Decrease volume by 10%"
+    },
+    "volume-reset": {
+      "suggested_key": {
+        "default": "Alt+Shift+0",
+        "mac": "Alt+Shift+0"
+      },
+      "description": "Reset volume to 100%"
+    }
+  },
+  "background": {
+    "service_worker": "src/platforms/chromium/background/service-worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "tabCapture",
+    "offscreen",
+    "storage",
+    "tabs",
+    "activeTab"
+  ]
+}

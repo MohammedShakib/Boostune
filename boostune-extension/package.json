@@ -1,0 +1,12 @@
+{
+  "name": "boostune",
+  "version": "1.0.0",
+  "description": "Boost, balance, and control audio for individual browser tabs. Volume from 0% to 600% with per-tab control.",
+  "scripts": {
+    "build:chromium": "node scripts/build.js chromium",
+    "build:firefox": "node scripts/build.js firefox",
+    "build": "npm run build:chromium && npm run build:firefox",
+    "package:chromium": "npm run build:chromium && cd dist && tar.exe -a -c -f boostune-chromium-v1.0.0.zip chromium/*",
+    "package:firefox": "npm run build:firefox && cd dist && tar.exe -a -c -f boostune-firefox-v1.0.0.zip firefox/*"
+  }
+}

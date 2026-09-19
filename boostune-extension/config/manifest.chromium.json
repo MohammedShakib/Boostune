@@ -1,0 +1,13 @@
+{
+  "background": {
+    "service_worker": "src/platforms/chromium/background/service-worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "tabCapture",
+    "offscreen",
+    "storage",
+    "tabs",
+    "activeTab"
+  ]
+}

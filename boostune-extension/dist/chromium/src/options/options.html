@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Boostune — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar Navigation ────────────────────────────────── -->
+  <nav class="sidebar" aria-label="Settings navigation">
+    <div class="sidebar__brand">
+      <img class="sidebar__logo" src="../../assets/icons/icon48.png" alt="Boostune">
+      <span class="sidebar__name">BOOSTUNE</span>
+    </div>
+
+    <div class="nav-item active" data-page="general" role="button" tabindex="0" aria-label="General settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      General
+    </div>
+    <div class="nav-item" data-page="audio" role="button" tabindex="0" aria-label="Audio settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      </svg>
+      Audio
+    </div>
+    <div class="nav-item" data-page="shortcuts" role="button" tabindex="0" aria-label="Keyboard shortcuts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="6" width="20" height="12" rx="2"/>
+        <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/>
+      </svg>
+      Shortcuts
+    </div>
+    <div class="nav-item" data-page="sites" role="button" tabindex="0" aria-label="Site preferences">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+      Site Preferences
+    </div>
+    <div class="nav-item" data-page="privacy" role="button" tabindex="0" aria-label="Privacy information">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      Privacy
+    </div>
+    <div class="nav-item" data-page="about" role="button" tabindex="0" aria-label="About Boostune">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      About
+    </div>
+
+    <div class="sidebar__footer" id="sidebarVersion"></div>
+  </nav>
+
+  <!-- ── Content ───────────────────────────────────────────── -->
+  <main class="content">
+
+    <!-- ── General ─────────────────────────────────────────── -->
+    <section class="page active" id="page-general" aria-labelledby="general-title">
+      <h1 class="page-title" id="general-title">General</h1>
+      <p class="page-desc">Customise how Boostune behaves by default.</p>
+
+      <div class="section">
+        <div class="section__title">Defaults</div>
+
+        <div class="setting-row">
+          <div class="setting-row__label">
+            <div class="setting-row__name">Default Volume</div>
+            <div class="setting-row__desc">Starting volume when Boostune activates for a new tab.</div>
+          </div>
+          <select class="settings-select" id="defaultVolumeSelect" aria-label="Default volume">
+            <option value="50">50%</option>
+            <option value="100" selected>100%</option>
+            <option value="120">120%</option>
+            <option value="150">150%</option>
+            <option value="200">200%</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-row__label">
+            <div class="setting-row__name">Remember Volume per Site</div>
+            <div class="setting-row__desc">Restore the last-used volume when returning to the same website.</div>
+          </div>
+          <label class="toggle-switch" aria-label="Remember volume per site">
+            <input type="checkbox" id="rememberVolumeToggle">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Audio ────────────────────────────────────────────── -->
+    <section class="page" id="page-audio" aria-labelledby="audio-title">
+      <h1 class="page-title" id="audio-title">Audio</h1>
+      <p class="page-desc">Configure the audio processing pipeline.</p>
+
+      <div class="section">
+        <div class="section__title">Safe Boost</div>
+
+        <div class="setting-row">
+          <div class="setting-row__label">
+            <div class="setting-row__name">Enable Safe Boost by default</div>
+            <div class="setting-row__desc">Applies a limiter-style compressor to reduce clipping when volume is boosted above 100%.</div>
+          </div>
+          <label class="toggle-switch" aria-label="Safe Boost default">
+            <input type="checkbox" id="safeBoostDefaultToggle" checked>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section__title">Volume Limit</div>
+
+        <div class="warning-box">
+          <strong>⚠ High Volume Warning</strong>
+          Very high amplification (above 200%) may cause clipping or distortion depending on
+          the source audio quality and your speaker/headphone sensitivity. Use caution.
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-row__label">
+            <div class="setting-row__name">Maximum Volume</div>
+            <div class="setting-row__desc">Caps the slider and preset buttons to this value.</div>
+          </div>
+          <select class="settings-select" id="maxVolumeSelect" aria-label="Maximum volume">
+            <option value="200">200%</option>
+            <option value="300">300%</option>
+            <option value="400" selected>400%</option>
+            <option value="600">600% (Advanced)</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Shortcuts ─────────────────────────────────────────── -->
+    <section class="page" id="page-shortcuts" aria-labelledby="shortcuts-title">
+      <h1 class="page-title" id="shortcuts-title">Shortcuts</h1>
+      <p class="page-desc">Keyboard shortcuts work when Boostune is active on the current tab.</p>
+
+      <div class="section">
+        <div class="section__title">Keyboard Shortcuts</div>
+
+        <table class="shortcuts-table" aria-label="Keyboard shortcuts">
+          <tbody>
+            <tr>
+              <td>Increase volume by 10%</td>
+              <td><span class="kbd">Alt</span> + <span class="kbd">↑</span></td>
+            </tr>
+            <tr>
+              <td>Decrease volume by 10%</td>
+              <td><span class="kbd">Alt</span> + <span class="kbd">↓</span></td>
+            </tr>
+            <tr>
+              <td>Reset volume to 100%</td>
+              <td><span class="kbd">Alt</span> + <span class="kbd">Shift</span> + <span class="kbd">0</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style="font-size:12px;color:var(--text-muted);margin-top:16px;line-height:1.7">
+          To change these shortcuts, visit <strong style="color:var(--text-secondary)">chrome://extensions/shortcuts</strong> in Chrome
+          or <strong style="color:var(--text-secondary)">edge://extensions/shortcuts</strong> in Edge.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── Site Preferences ──────────────────────────────────── -->
+    <section class="page" id="page-sites" aria-labelledby="sites-title">
+      <h1 class="page-title" id="sites-title">Site Preferences</h1>
+      <p class="page-desc">Remembered volume levels per website. Requires <em>Remember Volume</em> to be enabled in General settings.</p>
+
+      <div class="section">
+        <div class="section__title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Saved Sites</span>
+          <button class="btn btn--danger" id="clearAllSitesBtn">Clear All</button>
+        </div>
+
+        <div id="siteVolumesList">
+          <div class="empty-msg">No site volumes saved yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Privacy ────────────────────────────────────────────── -->
+    <section class="page" id="page-privacy" aria-labelledby="privacy-title">
+      <h1 class="page-title" id="privacy-title">Privacy</h1>
+      <p class="page-desc">Boostune is designed to be privacy-first. Here's exactly what it does and doesn't do.</p>
+
+      <ul class="privacy-list" role="list">
+        <li><span class="check" aria-hidden="true">✓</span> <div><strong>Audio is processed locally.</strong> Tab audio is captured by your browser, processed in the extension's offscreen document, and output to your speakers — entirely on your device.</div></li>
+        <li><span class="check" aria-hidden="true">✓</span> <div><strong>No audio is recorded or saved.</strong> Boostune does not write audio data to disk or memory beyond what the Web Audio API uses transiently for processing.</div></li>
+        <li><span class="check" aria-hidden="true">✓</span> <div><strong>No data leaves your browser.</strong> Boostune makes no network requests. No analytics, no telemetry, no cloud sync.</div></li>
+        <li><span class="check" aria-hidden="true">✓</span> <div><strong>No content scripts injected.</strong> Boostune does not inject scripts into websites. It uses only extension-provided browser APIs.</div></li>
+        <li><span class="check" aria-hidden="true">✓</span> <div><strong>Preferences stored locally.</strong> Your settings (volume defaults, remembered site volumes) are stored in <code>chrome.storage.sync</code> and may sync across your Chrome profile — but stay within Google's infrastructure and are not accessible to Boostune servers (there are none).</div></li>
+      </ul>
+    </section>
+
+    <!-- ── About ─────────────────────────────────────────────── -->
+    <section class="page" id="page-about" aria-labelledby="about-title">
+      <h1 class="page-title hidden" id="about-title">About</h1>
+
+      <div class="about-logo">
+        <img src="../../assets/icons/icon128.png" alt="Boostune logo">
+        <div>
+          <div class="about-logo__name">BOOSTUNE</div>
+          <div class="about-logo__tag">Boost Every Tab &nbsp;·&nbsp; <span id="aboutVersion">v1.0.0</span></div>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <strong>What is Boostune?</strong>
+        Boostune is a browser extension that captures the audio output of individual browser tabs and
+        processes it through a custom Web Audio API pipeline. You can independently boost or reduce the
+        volume of each tab from 0% to 600%, with a Safe Boost limiter to reduce clipping.
+      </div>
+
+      <div class="about-card">
+        <strong>Architecture</strong>
+        Audio capture uses <code>chrome.tabCapture</code>. Processing runs in an Offscreen Document
+        (AudioContext → GainNode → DynamicsCompressor → destination). The Service Worker coordinates
+        session lifecycle. The popup is a pure UI layer.
+      </div>
+
+      <div class="about-card">
+        <strong>Permissions Used</strong><br>
+        <code>tabCapture</code> — capture tab audio stream<br>
+        <code>offscreen</code> — run AudioContext persistently<br>
+        <code>storage</code> — save preferences and site volumes<br>
+        <code>tabs</code> — read tab titles, favicons, audible state<br>
+        <code>activeTab</code> — access current tab info on popup open
+      </div>
+    </section>
+
+  </main><!-- /content -->
+</div><!-- /app -->
+
+<!-- Toast notification -->
+<div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+
+<script type="module" src="options.js"></script>
+</body>
+</html>

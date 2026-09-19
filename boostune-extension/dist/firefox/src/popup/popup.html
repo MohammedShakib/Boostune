@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boostune</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <!-- ── Onboarding Overlay (shown on first launch) ──────── -->
+  <div class="onboarding hidden" id="onboarding" role="dialog" aria-label="Welcome to Boostune">
+    <img class="onboarding__logo" src="../../assets/icons/icon128.png" alt="Boostune logo">
+    <h1 class="onboarding__title">Welcome to Boostune</h1>
+    <p class="onboarding__sub">Boost Every Tab</p>
+    <div class="onboarding__steps">
+      <div class="onboarding__step">
+        <div class="onboarding__step-num">1</div>
+        <div class="onboarding__step-text">
+          <strong>Choose a tab</strong>
+          <span>Open any tab playing audio — YouTube, Spotify, a video call.</span>
+        </div>
+      </div>
+      <div class="onboarding__step">
+        <div class="onboarding__step-num">2</div>
+        <div class="onboarding__step-text">
+          <strong>Boost the audio</strong>
+          <span>Click the toggle to activate Boostune, then drag the slider.</span>
+        </div>
+      </div>
+      <div class="onboarding__step">
+        <div class="onboarding__step-num">3</div>
+        <div class="onboarding__step-text">
+          <strong>Use Safe Boost</strong>
+          <span>Keep it ON to reduce clipping at high volumes.</span>
+        </div>
+      </div>
+    </div>
+    <button class="onboarding__btn" id="onboardingDone">Get Started</button>
+  </div>
+
+  <!-- ── Main UI ──────────────────────────────────────────── -->
+  <div class="main-ui" id="mainUi">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header__brand">
+        <img class="header__logo" src="../../assets/icons/icon48.png" alt="Boostune" id="headerLogo">
+        <div class="header__title-block">
+          <span class="header__name">BOOSTUNE</span>
+          <span class="header__tagline">Boost Every Tab</span>
+        </div>
+      </div>
+      <div class="header__controls">
+        <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Open Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+        <button class="power-toggle" id="powerToggle" aria-label="Toggle Boostune for this tab" aria-pressed="false">
+          <span class="power-toggle__dot"></span>
+          <span class="power-toggle__label" id="powerLabel">Inactive</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Error / Warning Banner -->
+    <div class="banner error hidden" id="errorBanner" role="alert">
+      <svg class="banner__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="errorMessage">Error message</span>
+    </div>
+
+    <!-- Current Tab Card -->
+    <div class="section-label">Current Tab</div>
+    <div class="tab-card" id="currentTabCard" aria-label="Current tab information">
+      <div class="tab-card__favicon tab-card__favicon--placeholder" id="tabFaviconWrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+        </svg>
+      </div>
+      <div class="tab-card__info">
+        <div class="tab-card__title" id="tabTitle">Loading…</div>
+        <div class="tab-card__domain" id="tabDomain">—</div>
+      </div>
+      <div class="tab-card__status">
+        <span class="status-pill status-pill--idle" id="statusPill">Idle</span>
+      </div>
+    </div>
+
+    <!-- Volume Section -->
+    <div class="volume-section">
+      <div class="volume-display" aria-live="polite">
+        <span class="volume-display__number" id="volumeNumber">100</span>
+        <span class="volume-display__unit">%</span>
+      </div>
+
+      <div class="slider-container">
+        <div class="slider-labels">
+          <span>0%</span>
+          <span id="volumeMidLabel">300%</span>
+          <span id="volumeMaxLabel">600%</span>
+        </div>
+        <input
+          type="range"
+          class="volume-slider"
+          id="volumeSlider"
+          min="0"
+          max="600"
+          step="10"
+          value="100"
+          aria-label="Volume"
+          aria-valuemin="0"
+          aria-valuemax="600"
+          aria-valuenow="100"
+        >
+      </div>
+
+      <!-- +/- and presets -->
+      <div class="controls-row">
+        <button class="step-btn" id="volDown" aria-label="Decrease volume by 10%">−</button>
+        <div class="presets-scroll" role="group" aria-label="Volume presets">
+          <button class="preset-btn" data-vol="50"  aria-label="Set 50%">50%</button>
+          <button class="preset-btn preset-btn--default" data-vol="100" aria-label="Reset to 100%">100%</button>
+          <button class="preset-btn" data-vol="150" aria-label="Set 150%">150%</button>
+          <button class="preset-btn" data-vol="200" aria-label="Set 200%">200%</button>
+          <button class="preset-btn" data-vol="300" aria-label="Set 300%">300%</button>
+          <button class="preset-btn" data-vol="400" aria-label="Set 400%">400%</button>
+          <button class="preset-btn" data-vol="600" aria-label="Set 600%">600%</button>
+        </div>
+        <button class="step-btn" id="volUp" aria-label="Increase volume by 10%">+</button>
+      </div>
+
+      <!-- Safe Boost -->
+      <div class="safe-boost active" id="safeBoostCard" role="button" aria-label="Toggle Safe Boost" tabindex="0">
+        <div class="safe-boost__left">
+          <div class="safe-boost__icon" aria-hidden="true">🛡</div>
+          <div>
+            <div class="safe-boost__label">Safe Boost</div>
+            <div class="safe-boost__desc">Reduces clipping at high volumes</div>
+          </div>
+        </div>
+        <label class="toggle-switch" aria-label="Safe Boost">
+          <input type="checkbox" id="safeBoostToggle" checked aria-label="Safe Boost enabled">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="divider" style="margin: 10px 0 0"></div>
+
+    <!-- Playing Tabs -->
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:16px">
+      <span>Playing Tabs</span>
+      <span id="playingCount" style="font-size:10px;color:var(--text-muted)"></span>
+    </div>
+
+    <div class="playing-tabs" id="playingTabsList" role="list" aria-label="Playing tabs">
+      <div class="empty-state">No tabs with audio detected.</div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer__links">
+        <span class="footer__link" id="footerSettings" role="button" tabindex="0">Settings</span>
+        <span class="footer__link" id="footerPrivacy" role="button" tabindex="0">Privacy</span>
+      </div>
+      <span class="footer__version" id="versionLabel">v1.0.0</span>
+    </footer>
+
+  </div><!-- /main-ui -->
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
