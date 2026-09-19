@@ -1,205 +1,255 @@
-# Boostune
+<div align="center">
 
-> **Boost Every Tab** — per-tab audio volume control for Chrome and Edge
+<img src="assets/mockups/boostune-hero-banner.png" alt="Boostune — Control volume for every browser tab" width="100%">
 
-Boostune is a Manifest V3 browser extension that lets you independently boost or attenuate the volume of individual browser tabs. Amplify quiet YouTube videos, boost low-volume meetings, or soften loud music — all without touching system volume.
+<br/>
+<br/>
 
----
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white)](https://github.com/MohammedShakib/Boostune)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-00D4FF?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![Version](https://img.shields.io/badge/Version-1.0.0-0066FF?style=for-the-badge)](https://github.com/MohammedShakib/Boostune/releases)
+[![License](https://img.shields.io/badge/License-MIT-blueviolet?style=for-the-badge)](LICENSE)
+[![Privacy](https://img.shields.io/badge/Privacy-First-00D48A?style=for-the-badge&logo=shield&logoColor=white)](PRIVACY.md)
 
-## Features
+<h3>
+  🔊 Boost, balance, and control audio for individual browser tabs.<br/>
+  From 0% silence to 600% amplification — per tab, in real time.
+</h3>
 
-| Feature | Details |
-|---|---|
-| **Per-tab volume control** | 0% – 600%, independent per tab |
-| **Real-time slider** | Smooth debounced volume changes, no pops |
-| **Safe Boost** | Limiter-style compressor to reduce clipping at high volumes |
-| **Quick presets** | 50%, 100%, 150%, 200%, 300%, 400%, 600% |
-| **Keyboard shortcuts** | Alt+↑ / Alt+↓ / Alt+Shift+0 |
-| **Playing Tabs list** | Shows all tabs producing audio and their Boostune state |
-| **Remember Volume** | Per-site volume memory (opt-in) |
-| **Settings page** | Full settings with site volume management |
-| **Privacy-first** | No network requests, no audio recording, no analytics |
+</div>
 
 ---
 
-## Architecture
+## ✨ Preview
+
+<div align="center">
+
+<img src="assets/mockups/boostune-popup-mockup.png" alt="Boostune Popup UI" width="420px">
+
+<br/><br/>
+
+<img src="assets/mockups/boostune-settings-mockup.png" alt="Boostune Settings Page" width="100%">
+
+</div>
+
+---
+
+## 🚀 Features
+
+| Feature | Description |
+|:---:|:---|
+| 🎚️ **Per-Tab Volume** | Independently control each tab from **0% to 600%** |
+| 🛡️ **Safe Boost** | Built-in limiter/compressor to reduce clipping at high volumes |
+| ⚡ **Quick Presets** | One-click preset buttons: 50%, 100%, 150%, 200%, 300%, 400%, 600% |
+| 🎯 **Playing Tabs** | See all audio-producing tabs and their Boostune volumes at a glance |
+| 💾 **Remember Volume** | Automatically restore volume per website (opt-in) |
+| ⌨️ **Keyboard Shortcuts** | `Alt+↑` / `Alt+↓` / `Alt+Shift+0` for hands-free control |
+| 🔒 **Privacy First** | Zero network requests · No audio recording · No analytics |
+| 🌐 **Chrome & Edge** | Works on all Chromium-based browsers |
+
+---
+
+## 🏗️ Architecture
+
+Boostune uses a clean, layered architecture where **audio never runs in the popup**:
 
 ```
-Popup (UI — ephemeral)
-   │
-   │  chrome.runtime.sendMessage (typed MSG contract)
-   ▼
-Service Worker (background/service-worker.js)
-   │  • Session lifecycle management
-   │  • chrome.tabCapture.getMediaStreamId()
-   │  • Offscreen document management
-   │
-   │  chrome.runtime.sendMessage
-   ▼
-Offscreen Document (src/offscreen/)
-   │  • navigator.mediaDevices.getUserMedia (chromeMediaSource: 'tab')
-   │  • One AudioSession per active tab
-   ▼
-AudioContext (per tab)
-   MediaStreamAudioSourceNode
-   → GainNode                    (volume 0–600%)
-   → DynamicsCompressorNode      (Safe Boost: limiter mode)
-   → AudioContext.destination    (speakers/headphones)
+Popup UI  (ephemeral — closes anytime)
+    │  chrome.runtime messages
+    ▼
+Service Worker  (coordinates lifecycle)
+    │  chrome.tabCapture.getMediaStreamId()
+    │  chrome.offscreen.createDocument()
+    ▼
+Offscreen Document  (persistent audio host)
+    │  navigator.mediaDevices.getUserMedia()
+    ▼
+AudioContext  (one per active tab)
+    MediaStreamAudioSourceNode
+    → GainNode          (0–600% volume)
+    → DynamicsCompressor  (Safe Boost limiter)
+    → AudioContext.destination
 ```
 
-**Key design decisions:**
-- Audio pipeline lives in the **Offscreen Document** — survives popup close
-- **One AudioContext per active tab** — fully independent sessions
-- Chrome's `tabCapture` automatically mutes the browser's native tab output, routing everything through our AudioContext. At 100% gain, volume is approximately identical to uncaptured — **no echo or double-playback**
-- **Smooth gain ramps** via `gainNode.gain.setTargetAtTime()` — no clicks or pops on rapid slider movement
-- Session state persisted to `chrome.storage.session` — survives service worker restarts
+> **No echo guaranteed.** Chrome automatically mutes the browser's native tab audio when `tabCapture` is active — all sound routes exclusively through our AudioContext.
 
 ---
 
-## How to Install Locally (Chrome)
+## 📦 Installation
+
+### Load Unpacked (Developer Mode)
 
 1. Clone or download this repository
-2. Open Chrome and navigate to: `chrome://extensions`
-3. Enable **Developer mode** (toggle in the top right)
+```bash
+git clone https://github.com/MohammedShakib/Boostune.git
+```
+
+2. Open **Chrome** and navigate to:
+```
+chrome://extensions
+```
+
+3. Enable **Developer mode** (top-right toggle)
+
 4. Click **Load unpacked**
-5. Select the `boostune-extension/` folder (the one containing `manifest.json`)
-6. Boostune will appear in your extensions list
-7. Pin it to the toolbar for easy access
 
-### Edge
+5. Select the `boostune-extension/` folder *(the one containing `manifest.json`)*
 
-Same steps, but navigate to: `edge://extensions`
+6. Pin Boostune to your toolbar — and you're ready! 🎉
 
----
-
-## How to Test Boostune
-
-1. Open a tab playing audio (e.g. YouTube, Spotify Web)
-2. Click the Boostune icon in the toolbar
-3. Click the **Inactive** toggle to activate Boostune for the current tab
-4. Move the slider to adjust volume
-5. Try Safe Boost ON/OFF at high volumes (200%+)
-6. Open another tab and set a different volume — verify they are independent
-7. Close the first tab — verify the session cleans up
-8. Navigate the active tab to a new URL — Boostune stops cleanly
-
-See `TESTING.md` for the full testing checklist.
+> **Microsoft Edge:** Same steps at `edge://extensions`
 
 ---
 
-## Permissions
+## 🎮 How to Use
 
-| Permission | Reason |
-|---|---|
-| `tabCapture` | Obtain per-tab audio stream IDs |
-| `offscreen` | Run the AudioContext in a persistent background document |
-| `storage` | Save user preferences and remembered site volumes |
-| `tabs` | Read tab titles, favicons, and audible state for the Playing Tabs list |
-| `activeTab` | Access current tab details when the popup is opened |
-
-No host permissions are required.
+```
+1.  Open any tab playing audio (YouTube, Spotify, a video call…)
+2.  Click the Boostune icon in your toolbar
+3.  Hit the toggle → status changes to Boosting ●
+4.  Drag the slider or tap a preset to set your volume
+5.  Each tab is fully independent — set them all differently
+6.  Toggle off → audio returns to normal, no echo, no leftover sessions
+```
 
 ---
 
-## Keyboard Shortcuts
+## ⌨️ Keyboard Shortcuts
 
 | Shortcut | Action |
 |---|---|
-| `Alt + ↑` | Increase volume by 10% |
-| `Alt + ↓` | Decrease volume by 10% |
-| `Alt + Shift + 0` | Reset to 100% |
+| `Alt` + `↑` | Increase volume by 10% |
+| `Alt` + `↓` | Decrease volume by 10% |
+| `Alt` + `Shift` + `0` | Reset to 100% |
 
-Shortcuts only work when Boostune is active on the current tab.
-To customise shortcuts: `chrome://extensions/shortcuts`
+> Customise at `chrome://extensions/shortcuts`
 
 ---
 
-## Project Structure
+## 🔐 Permissions
+
+| Permission | Why It's Needed |
+|---|---|
+| `tabCapture` | Capture per-tab audio stream IDs |
+| `offscreen` | Host a persistent AudioContext outside the popup |
+| `storage` | Save your preferences & remembered site volumes |
+| `tabs` | Read tab titles, favicons, and audible state |
+| `activeTab` | Access current tab when popup opens |
+
+> No host permissions (`<all_urls>`) are requested.
+
+---
+
+## 📁 Project Structure
 
 ```
 boostune-extension/
-├── manifest.json
-├── README.md
-├── PRIVACY.md
-├── TESTING.md
+├── manifest.json                        ← MV3 manifest
+├── README.md · PRIVACY.md · TESTING.md
 │
 ├── src/
 │   ├── background/
-│   │   └── service-worker.js        # Session orchestration, tab lifecycle
+│   │   └── service-worker.js            ← Session orchestration
 │   ├── offscreen/
-│   │   ├── offscreen.html           # Minimal shell for AudioContext host
-│   │   └── offscreen.js             # Message router → sessionManager
+│   │   ├── offscreen.html               ← AudioContext host
+│   │   └── offscreen.js                 ← Message router
 │   ├── audio/
-│   │   ├── audio-engine.js          # AudioSession class (per-tab pipeline)
-│   │   └── audio-session-manager.js # Singleton map of active sessions
+│   │   ├── audio-engine.js              ← AudioSession class
+│   │   └── audio-session-manager.js     ← Per-tab session map
 │   ├── popup/
-│   │   ├── popup.html
-│   │   ├── popup.css
-│   │   └── popup.js                 # UI controller
+│   │   ├── popup.html / .css / .js      ← Extension popup
 │   ├── options/
-│   │   ├── options.html
-│   │   ├── options.css
-│   │   └── options.js               # Settings controller
+│   │   ├── options.html / .css / .js    ← Settings page
 │   ├── storage/
-│   │   └── storage.js               # chrome.storage abstraction layer
+│   │   └── storage.js                   ← chrome.storage wrapper
 │   └── shared/
-│       ├── constants.js             # MSG types, CAPTURE_STATE, VOLUME, DEFAULTS
-│       └── utils.js                 # Logger, clamp, URL helpers, error mapping
+│       ├── constants.js                 ← MSG types, VOLUME config
+│       └── utils.js                     ← Logger, helpers
 │
 └── assets/
-    ├── brand/
-    │   ├── boostune-logo-horizontal.png
-    │   ├── boostune-mark.png
-    │   ├── boostune-badge.png
-    │   └── boostune-waveform.png
-    │
-    ├── icons/
-    │   ├── icon.svg
-    │   ├── icon16.png
-    │   ├── icon32.png
-    │   ├── icon48.png
-    │   └── icon128.png
-    │
-    └── mockups/
-        ├── boostune-popup-mockup.png
-        ├── boostune-settings-mockup.png
-        ├── boostune-hero-banner.png
-        └── boostune-brand-board.png
+    ├── brand/                           ← Logo, waveform, badge
+    ├── icons/                           ← icon16/32/48/128.png + SVG
+    └── mockups/                         ← UI screenshots
 ```
 
 ---
 
-## Known Browser Limitations
+## 🎨 Brand & Design
 
-- **DRM-protected content** (Netflix, Disney+, Amazon Prime in some regions): The browser blocks `tabCapture` for DRM streams. Boostune shows a graceful error.
-- **chrome:// / edge:// pages**: Browser-internal pages cannot be captured — Boostune shows an informative message.
-- **Service Worker termination**: Chrome may terminate the service worker when idle. Boostune recovers session state from `chrome.storage.session` on next wake. Any active audio sessions will enter an error state and require manual re-activation.
-- **Multiple extensions capturing the same tab**: Only one extension can capture a tab at a time. If another extension is already capturing, `tabCapture.getMediaStreamId` will fail with a permission error.
+<div align="center">
+
+<img src="assets/mockups/boostune-brand-board.png" alt="Boostune Brand Board" width="100%">
+
+</div>
 
 ---
 
-## Development
+## ⚠️ Known Limitations
 
-All source files are plain ES modules — no build step required.
+| Limitation | Details |
+|---|---|
+| **DRM Content** | Netflix, Disney+ block `tabCapture` for encrypted streams — Boostune shows a graceful error |
+| **Browser Pages** | `chrome://` and `edge://` pages cannot be captured by design |
+| **SW Termination** | Chrome may idle-kill the service worker; sessions enter Error state and can be manually resumed |
+| **One Capture Per Tab** | If another extension already captures the tab, Boostune will show a permission error |
 
-```sh
-# Edit source files, then reload the extension at chrome://extensions
-# Press the refresh icon on the Boostune card
+---
+
+## 🔒 Privacy
+
+Boostune is **100% local**. It makes **zero network requests**.
+
+- ✅ Audio processed entirely in your browser
+- ✅ Nothing recorded, uploaded, or stored persistently
+- ✅ No analytics, no telemetry, no third-party libraries
+- ✅ No content scripts injected into websites
+
+→ Read the full [Privacy Policy](PRIVACY.md)
+
+---
+
+## 🛠️ Development
+
+No build step required — all files are plain ES modules.
+
+```bash
+# Edit source files, then reload the extension:
+# chrome://extensions → Boostune → Refresh icon
 ```
 
-### Debug logging
-Set `DEBUG = true` in `src/shared/utils.js` (it is true by default).
-All Boostune logs are prefixed `[Boostune]`.
+**Debug logging** is enabled by default. All logs are prefixed `[Boostune]`.  
+Set `DEBUG = false` in `src/shared/utils.js` before a production release.
 
 ---
 
-## Suggestions for V2
+## 🗺️ Roadmap (V2 Ideas)
 
-- Live audio visualiser (waveform/VU meter) in the popup
-- Per-tab equaliser (bass boost, treble, mid)
-- Stereo width control
-- Hotkey to toggle Boostune on the active tab
-- Browser action badge showing current volume percentage
-- Import/export site preferences
-- Dark/light theme toggle
-- Cross-device preference sync via chrome.storage.sync (already scaffolded)
+- [ ] 📊 Live waveform / VU meter visualiser
+- [ ] 🎛️ Per-tab equaliser (bass, mid, treble)
+- [ ] 🏷️ Badge icon showing current volume %
+- [ ] 🔇 Noise gate (auto-mute below threshold)
+- [ ] 🌙 Light / dark theme toggle
+- [ ] 📤 Export / import site preferences
+- [ ] 🦊 Firefox support (MV2 port)
+
+---
+
+## 📄 License
+
+MIT © [Mohammed Shakib](https://github.com/MohammedShakib)
+
+---
+
+<div align="center">
+
+<img src="assets/brand/boostune-logo-horizontal.png" alt="Boostune" width="220px">
+
+<br/>
+
+**A Louder Web Awaits.** 🔊
+
+<br/>
+
+*Built with the Web Audio API · Manifest V3 · Chrome tabCapture*
+
+</div>
