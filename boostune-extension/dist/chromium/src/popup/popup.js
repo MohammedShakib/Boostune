@@ -73,10 +73,13 @@ async function init() {
   applyVolumeLimit();
   renderState();
 
-  // Check onboarding
+  // Older builds could persist this as false. Do not block the popup shell:
+  // toolbar clicks must always show controls immediately.
   if (!prefs.onboardingCompleted) {
-    showOnboarding();
-    return;
+    prefs.onboardingCompleted = true;
+    updatePrefs({ onboardingCompleted: true }).catch((err) => {
+      console.warn('[Boostune] Could not mark onboarding complete', err);
+    });
   }
 
   // Get current tab

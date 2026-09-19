@@ -46,7 +46,7 @@ export const DEFAULTS = Object.freeze({
   REMEMBER_VOLUME:  false,
   MAX_VOLUME:       400,
   THEME:            'dark',
-  ONBOARDING_DONE:  false,
+  ONBOARDING_DONE:  true,
 });
 
 /** Volume range configuration. */
