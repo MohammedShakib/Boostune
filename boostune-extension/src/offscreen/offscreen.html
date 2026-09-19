@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Boostune Offscreen</title>
+  <!--
+    Boostune Offscreen Document
+    ───────────────────────────
+    This document is invisible to the user. Its sole purpose is to host
+    the Web Audio API pipeline via AudioContext. It must persist as long
+    as at least one tab is being captured; destroyed when idle.
+
+    All audio processing for all active tabs happens here.
+  -->
+</head>
+<body>
+  <script type="module" src="offscreen.js"></script>
+</body>
+</html>
