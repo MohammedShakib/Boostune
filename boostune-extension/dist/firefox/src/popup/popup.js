@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { MSG, CAPTURE_STATE, VOLUME } from '../core/shared/constants.js';
-import { clamp, isUnsupportedUrl, getDomain, truncate, debounce, formatVolume } from '../core/shared/utils.js';
+import { clamp, isUnsupportedUrl, getDomain, debounce } from '../core/shared/utils.js';
 import { getPrefs, updatePrefs } from '../core/storage/storage.js';
 import { platformApi } from '../core/api.js';
 
@@ -31,7 +31,6 @@ const statusPillEl     = $('statusPill');
 const currentTabCardEl = $('currentTabCard');
 const volumeNumberEl   = $('volumeNumber');
 const volumeSliderEl   = $('volumeSlider');
-const currentTabVolTextEl = $('currentTabVolText');
 const volumeMinLabelEl = $('volumeMinLabel');
 const volumeMidLabelEl = $('volumeMidLabel');
 const volumeMaxLabelEl = $('volumeMaxLabel');
@@ -39,13 +38,8 @@ const volDownEl        = $('volDown');
 const volUpEl          = $('volUp');
 const safeBoostCardEl  = $('safeBoostCard');
 const safeBoostToggleEl= $('safeBoostToggle');
-const playingTabsListEl= $('playingTabsList');
-const playingCountEl   = $('playingCount');
 const headerLogoEl     = $('headerLogo');
 const settingsBtnEl    = $('settingsBtn');
-const versionLabelEl   = $('versionLabel');
-const footerSettingsEl = $('footerSettings');
-const footerPrivacyEl  = $('footerPrivacy');
 const onboardingDoneEl = $('onboardingDone');
 
 // ── State ──────────────────────────────────────────────────────
@@ -57,18 +51,11 @@ let controlsLocked = false;
 let _sliderDragging = false;
 let _listeningForRuntimeMessages = false;
 let _listeningForStorageChanges = false;
+let _boostStartPromise = null;
 
 // ── Init ──────────────────────────────────────────────────────
 
 async function init() {
-  // Show version
-  try {
-    const manifest = platformApi.runtime.getManifest();
-    if (versionLabelEl) versionLabelEl.textContent = `v${manifest.version}`;
-  } catch (err) {
-    console.warn('[Boostune] Could not read manifest version', err);
-  }
-
   // Load preferences
   prefs = await getPrefs().catch((err) => {
     console.warn('[Boostune] Falling back to default preferences', err);
@@ -193,17 +180,18 @@ function renderState() {
 
   // Power toggle
   const isActive = state === CAPTURE_STATE.ACTIVE;
-  powerToggleEl.checked = isActive || state === CAPTURE_STATE.STARTING;
-  powerToggleEl.classList.toggle('active', isActive);
-  powerToggleEl.setAttribute('aria-pressed', String(isActive));
-  powerLabelEl.textContent = isActive ? 'Active' : (state === CAPTURE_STATE.STARTING ? 'Starting…' : 'Inactive');
-  powerLabelEl.classList.toggle('active', isActive);
+  const isEngaged = isActive || state === CAPTURE_STATE.STARTING;
+  powerToggleEl.checked = isEngaged;
+  powerToggleEl.classList.toggle('active', isEngaged);
+  powerToggleEl.setAttribute('aria-pressed', String(isEngaged));
+  powerLabelEl.textContent = isEngaged ? 'Active' : 'Inactive';
+  powerLabelEl.classList.toggle('active', isEngaged);
 
   // Status pill
   renderStatusPill(state);
 
   // Current tab card highlight
-  currentTabCardEl.classList.toggle('tab-card--active', isActive);
+  currentTabCardEl.classList.toggle('tab-card--active', isEngaged);
 
   // Volume display
   setVolumeUI(volume, false);
@@ -239,12 +227,6 @@ function applyVolumeLimit() {
   if (volumeMinLabelEl) volumeMinLabelEl.textContent = `${VOLUME.MIN}%`;
   if (volumeMidLabelEl) volumeMidLabelEl.textContent = `${midpoint}%`;
   if (volumeMaxLabelEl) volumeMaxLabelEl.textContent = `${max}%`;
-
-  document.querySelectorAll('.preset-btn').forEach((btn) => {
-    const presetVolume = parseInt(btn.dataset.vol, 10);
-    btn.disabled = presetVolume > max;
-    btn.hidden = presetVolume > max;
-  });
 }
 
 function renderStatusPill(state) {
@@ -271,22 +253,19 @@ function setVolumeUI(volume, animate = true) {
   volumeNumberEl.textContent = v;
   volumeNumberEl.setAttribute('aria-valuenow', v);
   volumeSliderEl.setAttribute('aria-valuenow', String(v));
-  if (currentTabVolTextEl) currentTabVolTextEl.textContent = `${v}%`;
 
   // Update slider fill via CSS custom property
   const pct = getMaxVolume() === 0 ? 0 : (v / getMaxVolume()) * 100;
   volumeSliderEl.style.setProperty('--fill', `${pct}%`);
-
-  // Highlight matching preset button
-  document.querySelectorAll('.preset-btn').forEach((btn) => {
-    const bv = parseInt(btn.dataset.vol, 10);
-    btn.classList.toggle('preset-btn--active', bv === v);
-  });
 }
 
 // ── Playing Tabs ──────────────────────────────────────────────
 
 async function refreshPlayingTabs() {
+  return Promise.resolve();
+
+  if (!playingTabsListEl || !playingCountEl) return;
+
   // Real audible tabs from Chrome
   const audibleTabs = await platformApi.tabs.query({ audible: true }).catch((err) => {
     console.warn('[Boostune] Could not query audible tabs', err);
@@ -378,13 +357,7 @@ async function refreshPlayingTabs() {
 }
 
 async function safeRefreshPlayingTabs() {
-  try {
-    await refreshPlayingTabs();
-  } catch (err) {
-    console.warn('[Boostune] Could not refresh playing tabs', err);
-    playingTabsListEl.innerHTML = '<div class="empty-state">Boostune is ready. Play audio to start boosting.</div>';
-    playingCountEl.textContent = '';
-  }
+  return Promise.resolve();
 }
 
 async function selectTab(tabId) {
@@ -484,8 +457,21 @@ volumeSliderEl.addEventListener('touchstart', () => { _sliderDragging = true; },
 volumeSliderEl.addEventListener('input', () => {
   const v = clampToUserVolumeLimit(parseInt(volumeSliderEl.value, 10));
   setVolumeUI(v);
+  if (!currentSession) {
+    currentSession = { captureState: CAPTURE_STATE.IDLE, volume: v, safeBoost: safeBoostToggleEl.checked };
+  }
+  currentSession.volume = v;
+
   if (currentSession?.captureState === CAPTURE_STATE.ACTIVE) {
     debouncedSetVol(v);
+  } else {
+    ensureBoostStarted(v).then((started) => {
+      if (!started) return;
+      const latest = clampToUserVolumeLimit(currentSession?.volume ?? v);
+      sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: latest }).catch((err) => {
+        console.warn('[Boostune] Could not sync startup volume', err);
+      });
+    });
   }
 });
 
@@ -516,21 +502,6 @@ async function nudge(delta) {
   });
   await safeRefreshPlayingTabs();
 }
-
-// Preset buttons
-document.querySelectorAll('.preset-btn').forEach((btn) => {
-  btn.addEventListener('click', async () => {
-    const v = clampToUserVolumeLimit(parseInt(btn.dataset.vol, 10));
-    setVolumeUI(v);
-    if (!currentSession) currentSession = { volume: v, captureState: CAPTURE_STATE.IDLE, safeBoost: true };
-    currentSession.volume = v;
-    if (!(await ensureBoostStarted(v))) return;
-    await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: v }).catch((err) => {
-      showError(err.message || 'Failed to set volume.');
-    });
-    await safeRefreshPlayingTabs();
-  });
-});
 
 // ── Safe Boost ────────────────────────────────────────────────
 
@@ -566,27 +537,7 @@ function openSettings() {
   platformApi.runtime.openOptionsPage();
 }
 
-function openPrivacy() {
-  platformApi.tabs.create({ url: platformApi.runtime.getURL('PRIVACY.md') });
-}
-
 settingsBtnEl?.addEventListener('click', openSettings);
-
-footerSettingsEl?.addEventListener('click', openSettings);
-footerSettingsEl?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    openSettings();
-  }
-});
-
-footerPrivacyEl?.addEventListener('click', openPrivacy);
-footerPrivacyEl?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault();
-    openPrivacy();
-  }
-});
 
 // ── Incoming messages from SW ─────────────────────────────────
 
@@ -658,9 +609,7 @@ function setControlsLocked(locked) {
   safeBoostToggleEl.disabled = locked;
   powerToggleEl.disabled = locked;
 
-  if (locked) {
-    document.querySelectorAll('.preset-btn').forEach((b) => { b.disabled = true; });
-  } else {
+  if (!locked) {
     applyVolumeLimit();
   }
 }
@@ -670,7 +619,7 @@ async function ensureBoostStarted(volume = volumeSliderEl.value) {
 
   const state = currentSession?.captureState || CAPTURE_STATE.IDLE;
   if (state === CAPTURE_STATE.ACTIVE) return true;
-  if (state === CAPTURE_STATE.STARTING) return false;
+  if (state === CAPTURE_STATE.STARTING) return _boostStartPromise || false;
 
   const targetVolume = clampToUserVolumeLimit(volume);
   if (!currentSession) {
@@ -687,17 +636,23 @@ async function ensureBoostStarted(volume = volumeSliderEl.value) {
   }
   renderState();
 
-  try {
-    const res = await startBoost(targetVolume);
-    if (!res?.success) {
-      showError(res?.error || 'Failed to start boost.');
+  _boostStartPromise = startBoost(targetVolume)
+    .then((res) => {
+      if (!res?.success) {
+        showError(res?.error || 'Failed to start boost.');
+        return false;
+      }
+      return true;
+    })
+    .catch((err) => {
+      showError(err.message || 'Failed to start boost.');
       return false;
-    }
-    return true;
-  } catch (err) {
-    showError(err.message || 'Failed to start boost.');
-    return false;
-  }
+    })
+    .finally(() => {
+      _boostStartPromise = null;
+    });
+
+  return _boostStartPromise;
 }
 
 function startBoost(volume) {

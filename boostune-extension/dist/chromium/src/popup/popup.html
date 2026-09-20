@@ -77,16 +77,6 @@
     </div>
 
     <!-- ── Presets ── -->
-    <div class="presets-row">
-      <button class="preset-btn" data-vol="50">50%</button>
-      <button class="preset-btn preset-btn--active" data-vol="100">100%</button>
-      <button class="preset-btn" data-vol="150">150%</button>
-      <button class="preset-btn" data-vol="200">200%</button>
-      <button class="preset-btn" data-vol="300">300%</button>
-      <button class="preset-btn" data-vol="400">400%</button>
-      <button class="preset-btn" data-vol="600">600%</button>
-    </div>
-
     <!-- ── Current Tab Card ── -->
     <div class="glass-card current-tab-card" id="currentTabCard">
       <div class="card-top">
@@ -101,17 +91,6 @@
       </div>
       <div class="card-divider"></div>
       <div class="card-bottom">
-        <div class="bottom-metric">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--brand-primary)" stroke="none">
-            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14l-1.41-1.41a8 8 0 0 0 0-11.32l1.41-1.41z"></path>
-            <path d="M15.54 8.46a5 5 0 0 1 0 7.07l-1.41-1.41a3 3 0 0 0 0-4.24l1.41-1.41z"></path>
-          </svg>
-          <div class="metric-text">
-            <span class="metric-label">Current Volume</span>
-            <span class="metric-value" id="currentTabVolText">100%</span>
-          </div>
-        </div>
         <div class="bottom-metric" id="safeBoostCard" role="button" tabindex="0" aria-label="Toggle Safe Boost">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
@@ -128,32 +107,6 @@
       </div>
     </div>
 
-    <!-- ── Playing Tabs ── -->
-    <div class="playing-tabs-section">
-      <div class="section-header">
-        <span class="section-title">PLAYING TABS <span id="playingCount">(0)</span></span>
-        <span class="section-subtitle">Boosting audio across your browser</span>
-      </div>
-      <div id="playingTabsList" class="playing-tabs-list">
-        <!-- JS populated -->
-      </div>
-    </div>
-
-    <!-- ── Footer ── -->
-    <footer class="footer">
-      <div class="footer-left">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--brand-primary)" stroke="none">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-        </svg>
-        <div class="footer-text">
-          <span class="footer-strong">More Volume. Works on Supported Sites.</span>
-          <span class="footer-sub">Videos, music, meetings. Just boost and enjoy.</span>
-        </div>
-      </div>
-      <div class="footer-right">
-        <span class="signature-text">A Louder<br>Web Awaits</span>
-      </div>
-    </footer>
   </div>
 
   <script src="popup.js" type="module"></script>

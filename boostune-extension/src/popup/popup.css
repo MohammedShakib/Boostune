@@ -210,7 +210,7 @@ input:checked + .slider:before {
 
 /* ── Slider ── */
 .slider-section {
-  padding: 0 20px 16px;
+  padding: 0 20px 22px;
 }
 
 .gradient-slider {
@@ -248,34 +248,6 @@ input:checked + .slider:before {
   font-size: 11px;
   color: var(--text-muted);
   font-weight: 500;
-}
-
-/* ── Presets ── */
-.presets-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 20px 24px;
-}
-
-.preset-btn {
-  background: var(--pill-inactive-bg);
-  color: var(--pill-inactive-text);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 20px;
-  transition: all 0.2s;
-}
-.preset-btn:hover {
-  background: #E2E8F0;
-}
-.preset-btn--active {
-  background: var(--brand-primary);
-  color: #FFFFFF;
-  box-shadow: 0 4px 10px rgba(0, 102, 255, 0.25);
-}
-.preset-btn--active:hover {
-  background: #0052CC;
 }
 
 /* ── Current Tab Card ── */
@@ -379,13 +351,20 @@ input:checked + .slider:before {
 
 .card-bottom {
   display: flex;
-  justify-content: space-between;
-  padding: 16px;
+  justify-content: flex-end;
+  padding: 14px 16px;
 }
 .bottom-metric {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+#safeBoostCard {
+  width: 100%;
+  justify-content: flex-end;
+}
+#safeBoostCard .metric-text {
+  margin-right: auto;
 }
 .metric-text {
   display: flex;
@@ -492,43 +471,6 @@ input:checked + .slider:before {
 .mini-waveform {
   height: 16px;
   opacity: 0.8;
-}
-
-/* ── Footer ── */
-.footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background: #F0F7FF;
-  border-top: 1px solid #E0F0FF;
-}
-.footer-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.footer-text {
-  display: flex;
-  flex-direction: column;
-}
-.footer-strong {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--brand-primary);
-}
-.footer-sub {
-  font-size: 10px;
-  color: #64748B;
-}
-.signature-text {
-  font-family: 'Outfit', cursive, sans-serif;
-  font-weight: 800;
-  font-size: 12px;
-  line-height: 1.1;
-  color: var(--brand-primary);
-  text-align: right;
-  font-style: italic;
 }
 
 /* ── Onboarding ── */
