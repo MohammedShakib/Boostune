@@ -40,6 +40,7 @@ const safeBoostToggleEl= $('safeBoostToggle');
 const playingTabsListEl= $('playingTabsList');
 const playingCountEl   = $('playingCount');
 const headerLogoEl     = $('headerLogo');
+const settingsBtnEl    = $('settingsBtn');
 const versionLabelEl   = $('versionLabel');
 const footerSettingsEl = $('footerSettings');
 const footerPrivacyEl  = $('footerPrivacy');
@@ -50,6 +51,7 @@ const onboardingDoneEl = $('onboardingDone');
 let currentTabId   = null;
 let currentSession = null; // SessionRecord from SW
 let prefs          = {};
+let controlsLocked = false;
 let _sliderDragging = false;
 let _listeningForRuntimeMessages = false;
 
@@ -59,7 +61,7 @@ async function init() {
   // Show version
   try {
     const manifest = platformApi.runtime.getManifest();
-    versionLabelEl.textContent = `v${manifest.version}`;
+    if (versionLabelEl) versionLabelEl.textContent = `v${manifest.version}`;
   } catch (err) {
     console.warn('[Boostune] Could not read manifest version', err);
   }
@@ -94,11 +96,12 @@ async function init() {
 
   currentTabId = tab.id;
   renderTabInfo(tab);
+  setControlsLocked(false);
 
   // Check if page is unsupported
   if (isUnsupportedUrl(tab.url)) {
     showError("Boostune can't control audio on this browser page.");
-    disableControls();
+    setControlsLocked(true);
     await safeRefreshPlayingTabs();
     startRuntimeListener();
     return;
@@ -186,6 +189,7 @@ function renderState() {
 
   // Power toggle
   const isActive = state === CAPTURE_STATE.ACTIVE;
+  powerToggleEl.checked = isActive || state === CAPTURE_STATE.STARTING;
   powerToggleEl.classList.toggle('active', isActive);
   powerToggleEl.setAttribute('aria-pressed', String(isActive));
   powerLabelEl.textContent = isActive ? 'Active' : (state === CAPTURE_STATE.STARTING ? 'Starting…' : 'Inactive');
@@ -384,6 +388,17 @@ async function selectTab(tabId) {
 
   currentTabId = tabId;
   renderTabInfo(tab);
+  currentSession = null;
+
+  if (isUnsupportedUrl(tab.url)) {
+    setControlsLocked(true);
+    renderState();
+    showError("Boostune can't control audio on this browser page.");
+    await refreshPlayingTabs();
+    return;
+  }
+
+  setControlsLocked(false);
 
   // Get its session state
   try {
@@ -458,21 +473,24 @@ volumeSliderEl.addEventListener('touchstart', () => { _sliderDragging = true; },
 volumeSliderEl.addEventListener('input', () => {
   const v = clampToUserVolumeLimit(parseInt(volumeSliderEl.value, 10));
   setVolumeUI(v);
-  debouncedSetVol(v);
+  if (currentSession?.captureState === CAPTURE_STATE.ACTIVE) {
+    debouncedSetVol(v);
+  }
 });
 
 volumeSliderEl.addEventListener('change', async () => {
   _sliderDragging = false;
   const v = clampToUserVolumeLimit(parseInt(volumeSliderEl.value, 10));
   setVolumeUI(v);
+  if (!(await ensureBoostStarted(v))) return;
   await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: v }).catch((err) => {
     showError(err.message || 'Failed to set volume.');
   });
   await safeRefreshPlayingTabs();
 });
 
-volDownEl.addEventListener('click', () => nudge(-VOLUME.STEP));
-volUpEl.addEventListener('click',   () => nudge(+VOLUME.STEP));
+volDownEl?.addEventListener('click', () => nudge(-VOLUME.STEP));
+volUpEl?.addEventListener('click',   () => nudge(+VOLUME.STEP));
 
 async function nudge(delta) {
   if (!currentTabId) return;
@@ -494,6 +512,7 @@ document.querySelectorAll('.preset-btn').forEach((btn) => {
     setVolumeUI(v);
     if (!currentSession) currentSession = { volume: v, captureState: CAPTURE_STATE.IDLE, safeBoost: true };
     currentSession.volume = v;
+    if (!(await ensureBoostStarted(v))) return;
     await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: v }).catch((err) => {
       showError(err.message || 'Failed to set volume.');
     });
@@ -539,16 +558,18 @@ function openPrivacy() {
   platformApi.tabs.create({ url: platformApi.runtime.getURL('PRIVACY.md') });
 }
 
-footerSettingsEl.addEventListener('click', openSettings);
-footerSettingsEl.addEventListener('keydown', (e) => {
+settingsBtnEl?.addEventListener('click', openSettings);
+
+footerSettingsEl?.addEventListener('click', openSettings);
+footerSettingsEl?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     openSettings();
   }
 });
 
-footerPrivacyEl.addEventListener('click', openPrivacy);
-footerPrivacyEl.addEventListener('keydown', (e) => {
+footerPrivacyEl?.addEventListener('click', openPrivacy);
+footerPrivacyEl?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     openPrivacy();
@@ -601,13 +622,54 @@ function hideError() {
   errorBannerEl.classList.add('hidden');
 }
 
-function disableControls() {
-  volumeSliderEl.disabled   = true;
-  volUpEl.disabled          = true;
-  volDownEl.disabled        = true;
-  safeBoostToggleEl.disabled= true;
-  powerToggleEl.disabled    = true;
-  document.querySelectorAll('.preset-btn').forEach((b) => { b.disabled = true; });
+function setControlsLocked(locked) {
+  controlsLocked = locked;
+  volumeSliderEl.disabled = locked;
+  if (volUpEl) volUpEl.disabled = locked;
+  if (volDownEl) volDownEl.disabled = locked;
+  safeBoostToggleEl.disabled = locked;
+  powerToggleEl.disabled = locked;
+
+  if (locked) {
+    document.querySelectorAll('.preset-btn').forEach((b) => { b.disabled = true; });
+  } else {
+    applyVolumeLimit();
+  }
+}
+
+async function ensureBoostStarted(volume = volumeSliderEl.value) {
+  if (!currentTabId || controlsLocked) return false;
+
+  const state = currentSession?.captureState || CAPTURE_STATE.IDLE;
+  if (state === CAPTURE_STATE.ACTIVE) return true;
+  if (state === CAPTURE_STATE.STARTING) return false;
+
+  const targetVolume = clampToUserVolumeLimit(volume);
+  if (!currentSession) {
+    currentSession = {
+      captureState: CAPTURE_STATE.STARTING,
+      volume: targetVolume,
+      safeBoost: safeBoostToggleEl.checked,
+      enabled: true,
+    };
+  } else {
+    currentSession.captureState = CAPTURE_STATE.STARTING;
+    currentSession.volume = targetVolume;
+    currentSession.enabled = true;
+  }
+  renderState();
+
+  try {
+    const res = await sw(MSG.BOOST_START, { tabId: currentTabId });
+    if (!res?.success) {
+      showError(res?.error || 'Failed to start boost.');
+      return false;
+    }
+    return true;
+  } catch (err) {
+    showError(err.message || 'Failed to start boost.');
+    return false;
+  }
 }
 
 // ── SW message helper ─────────────────────────────────────────
