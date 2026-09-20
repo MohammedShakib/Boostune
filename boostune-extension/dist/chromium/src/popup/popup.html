@@ -16,7 +16,7 @@
     <div class="onboarding-content">
       <img src="../../assets/icons/icon128.png" alt="Boostune Logo" class="onboarding-logo" />
       <h1 class="onboarding-title">Welcome to Boostune</h1>
-      <p class="onboarding-text">Boost audio up to 600% on any tab.</p>
+      <p class="onboarding-text">Boost audio up to your configured maximum on supported tabs.</p>
       <ul class="onboarding-list">
         <li><strong>Per-tab Control:</strong> Adjust volume for individual tabs.</li>
         <li><strong>Safe Boost:</strong> Built-in compressor to prevent clipping.</li>
@@ -69,10 +69,10 @@
 
     <!-- ── Slider Controls ── -->
     <div class="slider-section">
-      <input type="range" id="volumeSlider" min="0" max="600" step="5" value="100" class="gradient-slider" aria-label="Tab volume" />
+      <input type="range" id="volumeSlider" min="0" max="400" step="10" value="100" class="gradient-slider" aria-label="Tab volume" />
       <div class="slider-ticks">
-        <span>0%</span>
-        <span>600%</span>
+        <span id="volumeMinLabel">0%</span>
+        <span id="volumeMaxLabel">400%</span>
       </div>
     </div>
 
@@ -112,7 +112,7 @@
             <span class="metric-value" id="currentTabVolText">100%</span>
           </div>
         </div>
-        <div class="bottom-metric" id="safeBoostCard">
+        <div class="bottom-metric" id="safeBoostCard" role="button" tabindex="0" aria-label="Toggle Safe Boost">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
           </svg>
@@ -146,7 +146,7 @@
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
         </svg>
         <div class="footer-text">
-          <span class="footer-strong">More Volume. Works on Any Site.</span>
+          <span class="footer-strong">More Volume. Works on Supported Sites.</span>
           <span class="footer-sub">Videos, music, meetings. Just boost and enjoy.</span>
         </div>
       </div>

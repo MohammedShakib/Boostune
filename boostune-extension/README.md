@@ -2,10 +2,10 @@
 
 Boost Every Tab! A powerful, per-tab volume booster and audio balancer browser extension.
 
-Boostune allows you to amplify audio on any tab up to 600%. It features a built-in compressor (Safe Boost) to prevent distortion, independent volume control for every tab, and a beautiful UI.
+Boostune allows you to amplify audio on supported tabs up to your configured maximum (400% by default, 600% advanced). It features a built-in compressor (Safe Boost) to prevent distortion, independent volume control for every tab, and a beautiful UI.
 
 ## Features
-- 🎚️ **Per-tab control:** Boost volume up to 600% on a per-tab basis without affecting others.
+- 🎚️ **Per-tab control:** Boost volume up to your configured maximum on a per-tab basis without affecting others.
 - 🛡️ **Safe Boost:** A built-in dynamics compressor automatically prevents clipping and audio distortion when boosting to high levels.
 - 💾 **Remember Volumes:** Optionally remember volume settings on a per-site basis.
 - ⌨️ **Shortcuts:** Control volume directly with keyboard shortcuts (`Alt+Up`, `Alt+Down`).

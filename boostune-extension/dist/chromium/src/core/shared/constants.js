@@ -26,6 +26,7 @@ export const MSG = Object.freeze({
 
   // ── Offscreen Document → Service Worker ───────────────────
   OFFSCREEN_ERROR:          'OFFSCREEN_ERROR',
+  OFFSCREEN_READY:          'OFFSCREEN_READY',
   OFFSCREEN_STOPPED:        'OFFSCREEN_STOPPED',
   OFFSCREEN_SESSIONS:       'OFFSCREEN_SESSIONS',
 });

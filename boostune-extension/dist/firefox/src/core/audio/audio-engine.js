@@ -9,7 +9,7 @@
 //  or service worker.
 // ─────────────────────────────────────────────────────────────
 
-import { GAIN_RAMP_TIME } from '../shared/constants.js';
+import { GAIN_RAMP_TIME, MSG, VOLUME } from '../shared/constants.js';
 import { log, volumeToGain } from '../shared/utils.js';
 
 export class AudioSession {
@@ -63,14 +63,13 @@ export class AudioSession {
     this._source   = this._ctx.createMediaStreamSource(this.stream);
     this._gainNode = this._ctx.createGain();
 
-    // Set initial gain without ramp — silence until AudioContext is running
-    this._gainNode.gain.setValueAtTime(
-      volumeToGain(this._volume),
-      this._ctx.currentTime,
-    );
+    // Start silent and ramp after the graph is connected to reduce activation clicks.
+    const targetGain = volumeToGain(this._volume);
+    this._gainNode.gain.setValueAtTime(0, this._ctx.currentTime);
 
     // Wire the processing chain
     this._buildChain();
+    this._gainNode.gain.setTargetAtTime(targetGain, this._ctx.currentTime, GAIN_RAMP_TIME * 2);
 
     // Detect stream ending (tab navigated, muted at OS level, etc.)
     this.stream.addEventListener('inactive', this._onStreamInactive.bind(this));
@@ -120,10 +119,15 @@ export class AudioSession {
    */
   setVolume(volume) {
     if (!this.active || !this._gainNode || !this._ctx) return;
+    const wasLimited = this._shouldUseCompressor();
     this._volume = volume;
 
     if (this._ctx.state === 'suspended') {
       this._ctx.resume().catch(() => {});
+    }
+
+    if (wasLimited !== this._shouldUseCompressor()) {
+      this._buildChain();
     }
 
     this._gainNode.gain.setTargetAtTime(
@@ -162,7 +166,7 @@ export class AudioSession {
   _buildChain() {
     this._disconnect();
 
-    if (this._safeBoost) {
+    if (this._shouldUseCompressor()) {
       if (!this._compressor) {
         this._compressor = this._ctx.createDynamicsCompressor();
         // Limiter-style settings: very high ratio, fast attack, moderate release
@@ -189,13 +193,17 @@ export class AudioSession {
     safe(() => this._compressor && this._compressor.disconnect());
   }
 
+  _shouldUseCompressor() {
+    return this._safeBoost && this._volume > VOLUME.DEFAULT;
+  }
+
   /** Called when the MediaStream track ends unexpectedly. */
   _onStreamInactive() {
     if (!this.active) return;
     log.warn(`AudioSession[${this.tabId}] stream became inactive`);
     // Notify offscreen.js → SW → popup that the session ended
     chrome.runtime.sendMessage({
-      type:  'OFFSCREEN_ERROR',
+      type:  MSG.OFFSCREEN_ERROR,
       tabId: this.tabId,
       error: 'Stream ended unexpectedly.',
     }).catch(() => {});

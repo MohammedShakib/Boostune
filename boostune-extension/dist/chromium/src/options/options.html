@@ -202,7 +202,7 @@
         <li><span class="check" aria-hidden="true">✓</span> <div><strong>Audio is processed locally.</strong> Tab audio is captured by your browser, processed in the extension's offscreen document, and output to your speakers — entirely on your device.</div></li>
         <li><span class="check" aria-hidden="true">✓</span> <div><strong>No audio is recorded or saved.</strong> Boostune does not write audio data to disk or memory beyond what the Web Audio API uses transiently for processing.</div></li>
         <li><span class="check" aria-hidden="true">✓</span> <div><strong>No data leaves your browser.</strong> Boostune makes no network requests. No analytics, no telemetry, no cloud sync.</div></li>
-        <li><span class="check" aria-hidden="true">✓</span> <div><strong>No content scripts injected.</strong> Boostune does not inject scripts into websites. It uses only extension-provided browser APIs.</div></li>
+        <li><span class="check" aria-hidden="true">✓</span> <div><strong>Minimal page access.</strong> Chromium builds use extension-only browser APIs. Firefox builds inject a local bridge script only when you activate boosting, because Firefox does not provide the same tab audio capture API.</div></li>
         <li><span class="check" aria-hidden="true">✓</span> <div><strong>Preferences stored locally.</strong> Your settings (volume defaults, remembered site volumes) are stored in <code>chrome.storage.sync</code> and may sync across your Chrome profile — but stay within Google's infrastructure and are not accessible to Boostune servers (there are none).</div></li>
       </ul>
     </section>
@@ -223,23 +223,24 @@
         <strong>What is Boostune?</strong>
         Boostune is a browser extension that captures the audio output of individual browser tabs and
         processes it through a custom Web Audio API pipeline. You can independently boost or reduce the
-        volume of each tab from 0% to 600%, with a Safe Boost limiter to reduce clipping.
+        volume of each tab up to your configured maximum, with a Safe Boost limiter to reduce clipping while boosting.
       </div>
 
       <div class="about-card">
         <strong>Architecture</strong>
-        Audio capture uses <code>chrome.tabCapture</code>. Processing runs in an Offscreen Document
-        (AudioContext → GainNode → DynamicsCompressor → destination). The Service Worker coordinates
-        session lifecycle. The popup is a pure UI layer.
+        Chromium audio capture uses <code>chrome.tabCapture</code>. Processing runs in an Offscreen Document
+        (AudioContext → GainNode → optional DynamicsCompressor → destination). Firefox uses an injected
+        local page bridge for HTML media elements. The Service Worker coordinates session lifecycle.
       </div>
 
       <div class="about-card">
         <strong>Permissions Used</strong><br>
-        <code>tabCapture</code> — capture tab audio stream<br>
+        <code>tabCapture</code> — capture tab audio stream on Chromium<br>
         <code>offscreen</code> — run AudioContext persistently<br>
         <code>storage</code> — save preferences and site volumes<br>
         <code>tabs</code> — read tab titles, favicons, audible state<br>
-        <code>activeTab</code> — access current tab info on popup open
+        <code>activeTab</code> — access current tab info on popup open<br>
+        <code>scripting</code> — inject the Firefox media bridge on demand
       </div>
     </section>
 

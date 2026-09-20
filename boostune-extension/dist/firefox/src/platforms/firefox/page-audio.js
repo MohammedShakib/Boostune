@@ -26,6 +26,10 @@
     return vol / 100;
   }
 
+  function shouldUseCompressor() {
+    return currentSafeBoost && currentVolume > 100;
+  }
+
   function initAudioContext() {
     if (ctx) return;
     ctx = new AudioContext();
@@ -50,13 +54,17 @@
       compressor.attack.setValueAtTime(0.001, ctx.currentTime);
       compressor.release.setValueAtTime(0.15, ctx.currentTime);
 
-      gainNode.gain.setValueAtTime(volumeToGain(currentVolume), ctx.currentTime);
+      const targetGain = volumeToGain(currentVolume);
+      gainNode.gain.setValueAtTime(isEnabled ? 0 : targetGain, ctx.currentTime);
 
       // Store nodes
       activeNodes.set(mediaEl, { source, gainNode, compressor });
 
       // Wire them up based on current state
       wireUp(mediaEl);
+      if (isEnabled) {
+        gainNode.gain.setTargetAtTime(targetGain, ctx.currentTime, GAIN_RAMP_TIME * 2);
+      }
     } catch (e) {
       console.error('[Boostune] Failed to connect media element:', e);
     }
@@ -79,7 +87,7 @@
       return;
     }
 
-    if (currentSafeBoost) {
+    if (shouldUseCompressor()) {
       source.connect(gainNode);
       gainNode.connect(compressor);
       compressor.connect(ctx.destination);
@@ -109,8 +117,12 @@
   }
 
   function setVolume(vol) {
+    const wasLimited = shouldUseCompressor();
     currentVolume = vol;
     if (!ctx) return;
+    if (wasLimited !== shouldUseCompressor()) {
+      activeNodes.forEach((_, mediaEl) => wireUp(mediaEl));
+    }
     const gainVal = volumeToGain(vol);
     activeNodes.forEach(({ gainNode }) => {
       gainNode.gain.setTargetAtTime(gainVal, ctx.currentTime, GAIN_RAMP_TIME);

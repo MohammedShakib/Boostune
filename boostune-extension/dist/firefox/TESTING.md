@@ -43,9 +43,9 @@ Manual testing checklist for verifying that Boostune's audio pipeline and UI wor
 - [ ] Slider moves smoothly with no audio pops or clicks
 - [ ] **−** button decreases by 10%
 - [ ] **+** button increases by 10%
-- [ ] Volume cannot exceed 600%
+- [ ] Volume cannot exceed the configured maximum (400% by default, 600% advanced)
 - [ ] Volume cannot go below 0%
-- [ ] Preset buttons (50%, 100%, 150%, 200%, 300%, 400%, 600%) set correct value
+- [ ] Preset buttons up to the configured maximum set the correct value
 - [ ] 100% preset highlights as the default/reset
 - [ ] Active preset button is highlighted in blue
 - [ ] Volume display updates in real-time during slider drag
@@ -78,7 +78,7 @@ Manual testing checklist for verifying that Boostune's audio pipeline and UI wor
 - [ ] Can re-activate on the refreshed tab
 
 ### Multiple rapid volume changes
-- [ ] Drag slider quickly from 0% to 600% and back → no audio pops/clicks
+- [ ] Drag slider quickly from 0% to the configured maximum and back → no audio pops/clicks
 - [ ] No JavaScript errors in SW or offscreen consoles
 
 ### Extension reload
@@ -137,7 +137,7 @@ Manual testing checklist for verifying that Boostune's audio pipeline and UI wor
 | 200% | Noticeably louder |
 | 300% | Loud; Safe Boost recommended |
 | 400% | Very loud; possible clipping without Safe Boost |
-| 600% | Maximum; high risk of clipping on low-quality sources |
+| 600% | Advanced maximum; high risk of clipping on low-quality sources |
 
 ---
 
@@ -161,7 +161,7 @@ A build is considered passing when:
 - [x] Real tab audio is captured (not fake)
 - [x] 100% = approximately normal volume
 - [x] 0% = silence
-- [x] Up to 600% selectable
+- [x] Configured maximum respected
 - [x] Safe Boost functional (compressor engaged/disengaged)
 - [x] Multiple tabs have independent volume levels
 - [x] No duplicate audio / echo

@@ -138,3 +138,4 @@ window.addEventListener('beforeunload', () => {
 });
 
 log.info('Boostune Offscreen Document ready');
+chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_READY }).catch(() => {});

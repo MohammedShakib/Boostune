@@ -164,7 +164,8 @@ input:checked + .slider:before {
   color: var(--text-muted);
   text-transform: uppercase;
 }
-.header-power input:checked ~ .power-label {
+.header-power input:checked ~ .power-label,
+.power-label.active {
   color: var(--brand-primary);
 }
 

@@ -67,6 +67,10 @@ export const platformApi = {
     },
   },
   storage: {
+    onChanged: {
+      addListener: (listener) => api.storage.onChanged.addListener(listener),
+      removeListener: (listener) => api.storage.onChanged.removeListener(listener),
+    },
     sync: {
       get: (keys) => {
         if (isFirefox) {

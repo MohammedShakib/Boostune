@@ -13,7 +13,7 @@
 
 <h3>
   ðŸ”Š Boost, balance, and control audio for individual browser tabs.<br/>
-  From 0% silence to 600% amplification â€” per tab, in real time.
+  From 0% silence to your configured maximum amplification — per tab, in real time.
 </h3>
 
 </div>
@@ -38,9 +38,9 @@
 
 | Feature | Description |
 |:---:|:---|
-| ðŸŽšï¸ **Per-Tab Volume** | Independently control each tab from **0% to 600%** |
+| ðŸŽšï¸ **Per-Tab Volume** | Independently control each tab from **0% to your configured maximum** |
 | ðŸ›¡ï¸ **Safe Boost** | Built-in limiter/compressor to reduce clipping at high volumes |
-| âš¡ **Quick Presets** | One-click preset buttons: 50%, 100%, 150%, 200%, 300%, 400%, 600% |
+| âš¡ **Quick Presets** | One-click preset buttons up to the configured maximum |
 | ðŸŽ¯ **Playing Tabs** | See all audio-producing tabs and their Boostune volumes at a glance |
 | ðŸ’¾ **Remember Volume** | Automatically restore volume per website (opt-in) |
 | âŒ¨ï¸ **Keyboard Shortcuts** | `Alt+â†‘` / `Alt+â†“` / `Alt+Shift+0` for hands-free control |
@@ -66,7 +66,7 @@ Offscreen Document  (persistent audio host)
     â–¼
 AudioContext  (one per active tab)
     MediaStreamAudioSourceNode
-    â†’ GainNode          (0â€“600% volume)
+    â†’ GainNode          (configured volume range)
     â†’ DynamicsCompressor  (Safe Boost limiter)
     â†’ AudioContext.destination
 ```
@@ -202,7 +202,7 @@ Boostune is **100% local**. It makes **zero network requests**.
 - âœ… Audio processed entirely in your browser
 - âœ… Nothing recorded, uploaded, or stored persistently
 - âœ… No analytics, no telemetry, no third-party libraries
-- âœ… No content scripts injected into websites
+- âœ… Chromium uses no website content scripts; Firefox injects a local media bridge only when boosting is activated
 
 â†’ Read the full [Privacy Policy](boostune-extension/PRIVACY.md)
 

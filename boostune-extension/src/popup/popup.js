@@ -31,6 +31,8 @@ const statusPillEl     = $('statusPill');
 const currentTabCardEl = $('currentTabCard');
 const volumeNumberEl   = $('volumeNumber');
 const volumeSliderEl   = $('volumeSlider');
+const currentTabVolTextEl = $('currentTabVolText');
+const volumeMinLabelEl = $('volumeMinLabel');
 const volumeMidLabelEl = $('volumeMidLabel');
 const volumeMaxLabelEl = $('volumeMaxLabel');
 const volDownEl        = $('volDown');
@@ -54,6 +56,7 @@ let prefs          = {};
 let controlsLocked = false;
 let _sliderDragging = false;
 let _listeningForRuntimeMessages = false;
+let _listeningForStorageChanges = false;
 
 // ── Init ──────────────────────────────────────────────────────
 
@@ -73,6 +76,7 @@ async function init() {
   });
   applyVolumeLimit();
   renderState();
+  startStorageListener();
 
   if (!prefs.onboardingCompleted) {
     showOnboarding();
@@ -193,6 +197,7 @@ function renderState() {
   powerToggleEl.classList.toggle('active', isActive);
   powerToggleEl.setAttribute('aria-pressed', String(isActive));
   powerLabelEl.textContent = isActive ? 'Active' : (state === CAPTURE_STATE.STARTING ? 'Starting…' : 'Inactive');
+  powerLabelEl.classList.toggle('active', isActive);
 
   // Status pill
   renderStatusPill(state);
@@ -231,6 +236,7 @@ function applyVolumeLimit() {
 
   volumeSliderEl.max = String(max);
   volumeSliderEl.setAttribute('aria-valuemax', String(max));
+  if (volumeMinLabelEl) volumeMinLabelEl.textContent = `${VOLUME.MIN}%`;
   if (volumeMidLabelEl) volumeMidLabelEl.textContent = `${midpoint}%`;
   if (volumeMaxLabelEl) volumeMaxLabelEl.textContent = `${max}%`;
 
@@ -264,6 +270,8 @@ function setVolumeUI(volume, animate = true) {
 
   volumeNumberEl.textContent = v;
   volumeNumberEl.setAttribute('aria-valuenow', v);
+  volumeSliderEl.setAttribute('aria-valuenow', String(v));
+  if (currentTabVolTextEl) currentTabVolTextEl.textContent = `${v}%`;
 
   // Update slider fill via CSS custom property
   const pct = getMaxVolume() === 0 ? 0 : (v / getMaxVolume()) * 100;
@@ -433,10 +441,13 @@ powerToggleEl.addEventListener('click', async () => {
     }
   } else {
     // Start
+    const requestedVolume = Number.isFinite(Number(currentSession?.volume))
+      ? currentSession.volume
+      : undefined;
     powerToggleEl.disabled = true;
-    setStatus('starting');
+    setStatus('starting', requestedVolume);
     try {
-      const res = await sw(MSG.BOOST_START, { tabId: currentTabId });
+      const res = await startBoost(requestedVolume);
       if (!res?.success) showError(res?.error || 'Failed to start boost.');
     } catch (err) {
       showError(err.message || 'Failed to start boost.');
@@ -446,12 +457,12 @@ powerToggleEl.addEventListener('click', async () => {
   }
 });
 
-function setStatus(state) {
+function setStatus(state, volume = currentSession?.volume ?? VOLUME.DEFAULT) {
   // Optimistic UI update while awaiting SW response
-  if (!currentSession) currentSession = { captureState: state, volume: 100, safeBoost: true, enabled: false };
+  if (!currentSession) currentSession = { captureState: state, volume, safeBoost: true, enabled: false };
   currentSession.captureState = state;
-  renderStatusPill(state);
-  powerLabelEl.textContent = state === 'starting' ? 'Starting…' : 'Stopping…';
+  currentSession.volume = volume;
+  renderState();
 }
 
 // ── Volume controls ───────────────────────────────────────────
@@ -499,6 +510,7 @@ async function nudge(delta) {
   setVolumeUI(newVol);
   if (!currentSession) currentSession = { volume: newVol, captureState: CAPTURE_STATE.IDLE, safeBoost: true };
   currentSession.volume = newVol;
+  if (!(await ensureBoostStarted(newVol))) return;
   await sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: newVol }).catch((err) => {
     showError(err.message || 'Failed to set volume.');
   });
@@ -610,6 +622,22 @@ function startRuntimeListener() {
   _listeningForRuntimeMessages = true;
 }
 
+function startStorageListener() {
+  if (_listeningForStorageChanges) return;
+  platformApi.storage.onChanged?.addListener((changes, areaName) => {
+    if (areaName !== 'sync' || !changes.boostune_prefs?.newValue) return;
+    prefs = { ...prefs, ...changes.boostune_prefs.newValue };
+    applyVolumeLimit();
+    const clampedVolume = clampToUserVolumeLimit(currentSession?.volume ?? volumeSliderEl.value);
+    if (currentSession && currentSession.volume !== clampedVolume) {
+      currentSession.volume = clampedVolume;
+      sw(MSG.BOOST_SET_VOLUME, { tabId: currentTabId, volume: clampedVolume }).catch(() => {});
+    }
+    setVolumeUI(clampedVolume, false);
+  });
+  _listeningForStorageChanges = true;
+}
+
 // ── Error display ─────────────────────────────────────────────
 
 function showError(msg) {
@@ -660,7 +688,7 @@ async function ensureBoostStarted(volume = volumeSliderEl.value) {
   renderState();
 
   try {
-    const res = await sw(MSG.BOOST_START, { tabId: currentTabId });
+    const res = await startBoost(targetVolume);
     if (!res?.success) {
       showError(res?.error || 'Failed to start boost.');
       return false;
@@ -670,6 +698,13 @@ async function ensureBoostStarted(volume = volumeSliderEl.value) {
     showError(err.message || 'Failed to start boost.');
     return false;
   }
+}
+
+function startBoost(volume) {
+  const payload = { tabId: currentTabId, safeBoost: safeBoostToggleEl.checked };
+  const parsed = Number(volume);
+  if (Number.isFinite(parsed)) payload.volume = clampToUserVolumeLimit(parsed);
+  return sw(MSG.BOOST_START, payload);
 }
 
 // ── SW message helper ─────────────────────────────────────────

@@ -43,6 +43,8 @@ import {
 
 /** @type {Map<number, SessionRecord>} */
 const sessions = new Map();
+let offscreenReady = false;
+const offscreenReadyWaiters = new Set();
 
 /**
  * @typedef {{
@@ -93,14 +95,16 @@ function broadcastError(tabId, error) {
 async function ensureOffscreenDocument() {
   const exists = await chrome.offscreen.hasDocument();
   if (!exists) {
+    offscreenReady = false;
     await chrome.offscreen.createDocument({
       url:           OFFSCREEN_URL,
       reasons:       [OFFSCREEN_REASON],
       justification: OFFSCREEN_JUSTIFICATION,
     });
     log.info('Offscreen document created');
-    // Give the document a moment to load before we send messages
-    await _sleep(150);
+    await waitForOffscreenReady();
+  } else if (!offscreenReady) {
+    offscreenReady = true;
   }
 }
 
@@ -112,6 +116,7 @@ async function maybeDestroyOffscreenDocument() {
     const exists = await chrome.offscreen.hasDocument();
     if (exists) {
       await chrome.offscreen.closeDocument();
+      offscreenReady = false;
       log.info('Offscreen document destroyed (no active sessions)');
     }
   }
@@ -119,7 +124,7 @@ async function maybeDestroyOffscreenDocument() {
 
 // ── Core: Start audio boost for a tab ────────────────────────
 
-async function startBoost(tabId) {
+async function startBoost(tabId, options = {}) {
   // ── 1. Validate tab ──────────────────────────────────────
   let tab;
   try {
@@ -152,10 +157,13 @@ async function startBoost(tabId) {
   session.captureState = CAPTURE_STATE.STARTING;
 
   const prefs = await getPrefs();
-  session.safeBoost = prefs.safeBoost;
+  session.safeBoost = typeof options.safeBoost === 'boolean' ? options.safeBoost : prefs.safeBoost;
 
   // Apply remembered volume if feature is enabled
-  if (prefs.rememberVolume && tab.url) {
+  const requestedVolume = Number(options.volume);
+  if (Number.isFinite(requestedVolume)) {
+    session.volume = requestedVolume;
+  } else if (prefs.rememberVolume && tab.url) {
     const domain   = getDomain(tab.url);
     const siteVols = await getSiteVolumes();
     session.volume = (domain && siteVols[domain] !== undefined)
@@ -181,6 +189,7 @@ async function startBoost(tabId) {
     session.enabled      = false;
     broadcastState(tabId, { ...session });
     await setSessionState(tabId, session);
+    await maybeDestroyOffscreenDocument();
     return { success: false, error: 'Failed to create offscreen document.' };
   }
 
@@ -339,6 +348,11 @@ async function cleanupTab(tabId) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message?.type) return false;
 
+  if (message.type === MSG.OFFSCREEN_READY) {
+    markOffscreenReady();
+    return false;
+  }
+
   // ── Async messages from the offscreen document ───────────
   if (message.type === MSG.OFFSCREEN_ERROR) {
     handleOffscreenError(message.tabId, message.error);
@@ -361,7 +375,10 @@ async function handleMessage(message) {
 
   switch (type) {
     case MSG.BOOST_START:
-      return await startBoost(tabId);
+      return await startBoost(tabId, {
+        volume: message.volume,
+        safeBoost: message.safeBoost,
+      });
 
     case MSG.BOOST_STOP:
       return await stopBoost(tabId);
@@ -496,8 +513,28 @@ log.info('Boostune Service Worker started');
 
 // ── Internal helpers ──────────────────────────────────────────
 
-function _sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+function markOffscreenReady() {
+  offscreenReady = true;
+  offscreenReadyWaiters.forEach((resolve) => resolve());
+  offscreenReadyWaiters.clear();
+}
+
+function waitForOffscreenReady(timeoutMs = 2000) {
+  if (offscreenReady) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      offscreenReadyWaiters.delete(done);
+      reject(new Error('Offscreen document did not become ready in time.'));
+    }, timeoutMs);
+
+    function done() {
+      clearTimeout(timeout);
+      resolve();
+    }
+
+    offscreenReadyWaiters.add(done);
+  });
 }
 
 function clampVolumeForPrefs(volume, prefs = {}) {

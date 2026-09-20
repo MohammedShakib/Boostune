@@ -67,7 +67,7 @@ async function injectContentScriptIfNeeded(tabId) {
   }
 }
 
-async function startBoost(tabId) {
+async function startBoost(tabId, options = {}) {
   let tab;
   try {
     tab = await browser.tabs.get(tabId);
@@ -89,9 +89,12 @@ async function startBoost(tabId) {
   session.captureState = CAPTURE_STATE.STARTING;
 
   const prefs = await getPrefs();
-  session.safeBoost = prefs.safeBoost;
+  session.safeBoost = typeof options.safeBoost === 'boolean' ? options.safeBoost : prefs.safeBoost;
 
-  if (prefs.rememberVolume && tab.url) {
+  const requestedVolume = Number(options.volume);
+  if (Number.isFinite(requestedVolume)) {
+    session.volume = requestedVolume;
+  } else if (prefs.rememberVolume && tab.url) {
     const domain = getDomain(tab.url);
     const siteVols = await getSiteVolumes();
     session.volume = (domain && siteVols[domain] !== undefined) ? siteVols[domain] : prefs.defaultVolume;
@@ -215,7 +218,10 @@ async function handleMessage(message) {
 
   switch (type) {
     case MSG.BOOST_START:
-      return await startBoost(tabId);
+      return await startBoost(tabId, {
+        volume: message.volume,
+        safeBoost: message.safeBoost,
+      });
     case MSG.BOOST_STOP:
       return await stopBoost(tabId);
     case MSG.BOOST_SET_VOLUME:
