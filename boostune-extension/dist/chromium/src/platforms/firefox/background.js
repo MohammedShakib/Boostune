@@ -81,7 +81,7 @@ async function startBoost(tabId, options = {}) {
 
   const session = getOrCreateSession(tabId);
   if (session.captureState === CAPTURE_STATE.ACTIVE) return { success: true };
-  if (session.captureState === CAPTURE_STATE.STARTING) return { success: false, error: 'Capture is already starting.' };
+  if (session.captureState === CAPTURE_STATE.STARTING) return { success: true };
 
   session.title = tab.title || '';
   session.favicon = tab.favIconUrl || '';

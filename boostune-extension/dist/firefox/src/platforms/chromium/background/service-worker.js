@@ -147,7 +147,7 @@ async function startBoost(tabId, options = {}) {
     return { success: true }; // already running
   }
   if (session.captureState === CAPTURE_STATE.STARTING) {
-    return { success: false, error: 'Capture is already starting.' };
+    return { success: true }; // duplicate start request while the first one is in flight
   }
 
   // ── 3. Populate session record ───────────────────────────
@@ -206,6 +206,10 @@ async function startBoost(tabId, options = {}) {
       });
     });
   } catch (err) {
+    if (isActiveStreamError(err) && await adoptExistingOffscreenCapture(tabId, session, prefs, options)) {
+      return { success: true };
+    }
+
     log.error(`getMediaStreamId failed for tab ${tabId}`, err);
     session.captureState = CAPTURE_STATE.ERROR;
     session.enabled      = false;
@@ -535,6 +539,59 @@ function waitForOffscreenReady(timeoutMs = 2000) {
 
     offscreenReadyWaiters.add(done);
   });
+}
+
+async function getOffscreenSessions() {
+  try {
+    const exists = await chrome.offscreen.hasDocument();
+    if (!exists) return {};
+
+    const response = await chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_GET_SESSIONS });
+    if (response?.success) {
+      offscreenReady = true;
+      return response.sessions || {};
+    }
+  } catch (err) {
+    log.warn('Could not read offscreen sessions', err);
+  }
+
+  return {};
+}
+
+async function adoptExistingOffscreenCapture(tabId, session, prefs = {}, options = {}) {
+  const offscreenSessions = await getOffscreenSessions();
+  const existing = offscreenSessions[String(tabId)] || offscreenSessions[tabId];
+  if (!existing?.active) return false;
+
+  const requestedVolume = Number(options.volume);
+  const requestedSafeBoost = options.safeBoost;
+
+  session.enabled = true;
+  session.captureState = CAPTURE_STATE.ACTIVE;
+  session.volume = clampVolumeForPrefs(
+    Number.isFinite(requestedVolume) ? requestedVolume : existing.volume,
+    prefs,
+  );
+  session.safeBoost = typeof requestedSafeBoost === 'boolean'
+    ? requestedSafeBoost
+    : Boolean(existing.safeBoost);
+
+  await setSessionState(tabId, session);
+  broadcastState(tabId, { ...session });
+
+  chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_SET_VOLUME, tabId, volume: session.volume })
+    .catch(() => {});
+  chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_SET_SAFE_BOOST, tabId, enabled: session.safeBoost })
+    .catch(() => {});
+
+  log.info(`Adopted existing Boostune capture for tab ${tabId}`);
+  return true;
+}
+
+function isActiveStreamError(err) {
+  const message = (err?.message || String(err)).toLowerCase();
+  return message.includes('active stream') ||
+    (message.includes('already') && message.includes('captur'));
 }
 
 function clampVolumeForPrefs(volume, prefs = {}) {

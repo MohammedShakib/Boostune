@@ -98,6 +98,8 @@ export function friendlyError(err) {
     return 'The tab is no longer available.';
   if (raw.includes('permission') || raw.includes('notallowed'))
     return 'Audio capture permission was denied.';
+  if (raw.includes('active stream') || (raw.includes('already') && raw.includes('captur')))
+    return 'This tab is already being captured. Stop the existing audio capture and try again.';
   if (raw.includes('notreadableerror'))
     return "Boostune can't read audio from this tab. Is another app capturing it?";
   if (raw.includes('aborterror'))
