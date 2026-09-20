@@ -10,7 +10,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { MSG, CAPTURE_STATE, VOLUME } from '../core/shared/constants.js';
-import { clamp, isUnsupportedUrl, getDomain, debounce } from '../core/shared/utils.js';
+import { clamp, isUnsupportedUrl, getDomain, truncate, debounce } from '../core/shared/utils.js';
 import { getPrefs, updatePrefs } from '../core/storage/storage.js';
 import { platformApi } from '../core/api.js';
 
